@@ -1,0 +1,37 @@
+!!! html5
+html
+	head
+		title="Wrapup Web Builder"
+
+		script(src="/js/codemirror/lib/codemirror.js")
+		script(src="/js/codemirror/mode/javascript/javascript.js")
+		link(href="/js/codemirror/lib/codemirror.css", rel="stylesheet")
+
+		script(src="/main.js")
+		link(href="/layout.css", rel="stylesheet")
+
+	body
+		| hello
+
+		form(method="post", action="/")
+
+			textarea#editor(name="setup")
+				| // export prime
+				| global.prime = require('nodes');
+				| // export nodes
+				| var $ = global.nodes = require('prime');
+				| // bind slick to nodes
+				| $.use(require('slick'));
+				| if (foo){
+				| 	a
+				| }
+
+			label
+				input(type="checkbox", name="compress", value="1")
+				| Compress the output JS
+
+			label
+				input(type="submit", value="Download your wrapup'd version");
+
+
+

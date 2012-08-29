@@ -1,0 +1,32 @@
+{
+  "name": "wrapup-webbuilder",
+  "version": "0.0.0",
+  "description": "A web builder for downloading browser wrapup'd JavaScript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/arian/wrapup-webbuilder.git"
+  },
+  "keywords": [
+    "wrapup",
+    "commonjs",
+    "require",
+    "download",
+    "builder"
+  ],
+  "author": "Arian Stolwijk",
+  "license": "MIT",
+  "dependencies": {
+    "express": "3",
+    "wrapup": "0.9.6",
+    "jade": "0.27",
+    "stylus": "0.29",
+    "async": "0.1",
+    "nodes": "0.0.6-alpha",
+    "slick": "1.9.1-alpha",
+    "prime": "0.0.5-alpha"
+  }
+}
