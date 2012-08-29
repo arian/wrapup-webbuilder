@@ -11,9 +11,24 @@ html
 		link(href="/layout.css", rel="stylesheet")
 
 	body
-		| hello
+
+		h1= "Download Wrapup'd NPM packages (prime/nodes/slick)"
 
 		form(method="post", action="/")
+
+			label
+				input.package(type="checkbox", value="prime", name="prime")
+				| Prime
+				script(type="text/snippet", id="prime-snippet")
+					| // export prime
+					| global.prime = require('prime');
+
+			label
+				input.package(type="checkbox", value="nodes", name="nodes")
+				| Nodes
+				script(type="text/snippet", id="nodes-snippet")
+					| // export nodes
+					| global.nodes = require('nodes');
 
 			textarea#editor(name="setup")
 				| // export prime

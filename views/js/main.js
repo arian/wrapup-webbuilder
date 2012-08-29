@@ -1,5 +1,6 @@
 
 var $ = require('nodes');
+$.use(require('slick'));
 var string = require('prime/es5/string');
 
 var CodeMirror = window.CodeMirror;
@@ -21,9 +22,34 @@ $.ready(function(){
 	editor.setValue(value);
 
 	// indent lines correctly, might have some indention from the HTML
-	var line, i = 0;
-	while ((line = editor.getLine(i)) !== undefined){
-		editor.indentLine(i++);
-	}
+	var lines = editor.lineCount();
+	for (var i = 0; i < lines; i++) editor.indentLine(i);
+
+	$('input.package').handle(function(){
+
+		var name = this.getAttribute('name');
+		var snippet = $('#' + name + '-snippet')[0].innerHTML;
+		snippet = string.trim(snippet);
+
+		var mark;
+
+		this.on('change', function(){
+
+			var checked = this.checked();
+
+			if (checked && !mark){
+				var lines = editor.lineCount();
+				editor.replaceRange("\n" + snippet, {line: lines});
+				var from = lines, to = editor.lineCount();
+				mark = editor.markText({line: from, ch: 0}, {line: to});
+				for (var i = from; i < to; i++) editor.indentLine(i);
+			} else if (!checked && mark){
+				var pos = mark.find();
+				editor.replaceRange('', pos.from, pos.to);
+				mark = null;
+			}
+
+		});
+	});
 
 });
