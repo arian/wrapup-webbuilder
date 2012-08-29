@@ -21,7 +21,7 @@ app.configure('development', function(){
 
 	// wrapup middleware
 	app.use(require('./lib/wrapupMiddleware.js')({
-		require: __dirname + '/public/js/main.js',
+		require: __dirname + '/views/js/main.js',
 		dest: __dirname + '/public/main.js'
 	}));
 
