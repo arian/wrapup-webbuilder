@@ -6,6 +6,7 @@ html
 		script(src="/js/codemirror/lib/codemirror.js")
 		script(src="/js/codemirror/mode/javascript/javascript.js")
 		link(href="/js/codemirror/lib/codemirror.css", rel="stylesheet")
+		link(href="/js/codemirror/theme/monokai.css", rel="stylesheet")
 
 		script(src="/main.js")
 		link(href="/layout.css", rel="stylesheet")
@@ -16,37 +17,39 @@ html
 
 		form(method="post", action="/")
 
-			label
-				input.package(type="checkbox", value="prime", name="prime")
-				| Prime
-				script(type="text/snippet", id="prime-snippet")
-					| // export prime
-					| global.prime = require('prime');
+			.labels
+				label
+					input.package(type="checkbox", value="prime", name="prime")
+					| Prime
+					script(type="text/snippet", id="prime-snippet")
+						| // export prime
+						| global.prime = require('prime');
 
-			label
-				input.package(type="checkbox", value="nodes", name="nodes")
-				| Nodes
-				script(type="text/snippet", id="nodes-snippet")
-					| // export nodes
-					| global.nodes = require('nodes');
+				label
+					input.package(type="checkbox", value="nodes", name="nodes")
+					| Nodes
+					script(type="text/snippet", id="nodes-snippet")
+						| // export nodes
+						| global.nodes = require('nodes');
 
-			textarea#editor(name="setup")
-				| // export prime
-				| global.prime = require('nodes');
-				| // export nodes
-				| var $ = global.nodes = require('prime');
-				| // bind slick to nodes
-				| $.use(require('slick'));
-				| if (foo){
-				| 	a
-				| }
+				label
+					input.package(type="checkbox", value="slick", name="slick")
+					| Slick
+					script(type="text/snippet", id="slick-snippet")
+						| // export slick
+						| global.slick = require('slick');
+						| require('nodes').use(global.slick);
+			.editor
+				textarea#editor(name="setup")
 
-			label
-				input(type="checkbox", name="compress", value="1")
-				| Compress the output JS
+			.save
 
-			label
-				input(type="submit", value="Download your wrapup'd version");
+				label
+					input(type="checkbox", name="compress", value="1")
+					| Compress the output JS
+
+				label
+					input(type="submit", value="Download your wrapup'd version");
 
 
 

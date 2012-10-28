@@ -7,6 +7,24 @@ var CodeMirror = window.CodeMirror;
 
 $.ready(function(){
 
+	var snippets = {};
+
+	var onChange = function(editor, change){
+		// probably a remove action
+		if (change.text.join() === '') for (var name in snippets){
+			var snippet = snippets[name],
+				mark = snippet.mark;
+			if (!mark) continue;
+			var pos = mark.find(),
+				mf = pos.from, mt = pos.to,
+				cf = change.from, ct = change.to;
+			if (cf.line <= mf.line && cf.ch <= mf.ch && ct.line >= mt.line && ct.ch >= mt.ch){
+				snippet.checkbox.checked(false);
+				delete snippets[name];
+			}
+		}
+	};
+
 	var textarea = document.getElementById('editor');
 	var value = string.trim(textarea.value);
 	textarea.value = '';
@@ -16,8 +34,13 @@ $.ready(function(){
 		indentWithTabs: true,
 		lineNumbers: true,
 		matchBrackets: true,
-		indentUnit: 4
+		indentUnit: 4,
+		theme: 'monokai',
+		onChange: onChange
 	});
+
+	// TODO global editor variable for debugging
+	window.editor = editor;
 
 	editor.setValue(value);
 
@@ -29,24 +52,34 @@ $.ready(function(){
 
 		var name = this.getAttribute('name');
 		var snippet = $('#' + name + '-snippet')[0].innerHTML;
-		snippet = string.trim(snippet);
+		snippet = "\n" + string.trim(snippet) + "\n";
+		var lines = snippet.split("\n").length - 1;
 
 		var mark;
+
+		var object = snippets[name] = {
+			name: name,
+			snippet: snippet,
+			mark: mark,
+			lines: lines,
+			checkbox: this
+		};
 
 		this.on('change', function(){
 
 			var checked = this.checked();
+			var pos;
 
 			if (checked && !mark){
-				var lines = editor.lineCount();
-				editor.replaceRange("\n" + snippet, {line: lines});
-				var from = lines, to = editor.lineCount();
-				mark = editor.markText({line: from, ch: 0}, {line: to});
-				for (var i = from; i < to; i++) editor.indentLine(i);
+				pos = editor.getCursor();
+				editor.replaceRange(snippet, pos);
+				var to = {line: pos.line + lines, ch: 0};
+				object.mark = mark = editor.markText(pos, to);
+				for (var i = pos.line; i < to.line; i++) editor.indentLine(i);
 			} else if (!checked && mark){
-				var pos = mark.find();
+				pos = mark.find();
 				editor.replaceRange('', pos.from, pos.to);
-				mark = null;
+				mark = object.mark = null;
 			}
 
 		});

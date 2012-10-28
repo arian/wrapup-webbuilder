@@ -8,3 +8,19 @@ body {
 form label {
   display: block;
 }
+@media screen and (min-width: 700px) {
+  .labels,
+  .editor {
+    float: left;
+  }
+  .labels {
+    width: 20%;
+    margin-right: 2%;
+  }
+  .editor {
+    width: 78%;
+  }
+  .save {
+    clear: both;
+  }
+}
