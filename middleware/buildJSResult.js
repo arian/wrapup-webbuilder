@@ -45,7 +45,6 @@ function editor(req, res, next){
 	res.type('js');
 	res.attachment('main.js');
 	res.send(req.body.setup);
-	next();
 }
 
 module.exports =  function buildJSResult(req, res, next){
