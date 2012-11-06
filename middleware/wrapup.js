@@ -1,4 +1,4 @@
-"use stirct";
+"use strict";
 
 var wrapup = require('wrapup');
 var fs = require('fs');
