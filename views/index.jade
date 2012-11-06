@@ -19,6 +19,11 @@ html
 
 		form(method="post", action="/")
 
+			.load
+				label
+					| Upload your previous main.js:
+					input(type="file", name="load")
+
 			ul.snippets
 				each code, name in snippets
 					li

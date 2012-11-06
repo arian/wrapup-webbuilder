@@ -1,9 +1,14 @@
+.hidden {
+  display: none;
+}
 body {
   font: 12px Helvetica, Arial, sans-serif;
 }
 .CodeMirror {
-  background: #efefef;
   border: 1px solid #000;
+}
+.load input {
+  display: block;
 }
 .snippets {
   list-style: none;

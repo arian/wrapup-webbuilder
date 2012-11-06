@@ -4,6 +4,7 @@
 	"eqnull": true,
 	"predef": {
 		"window": true,
-		"document": true
+		"document": true,
+		"FileReader": true
 	}
 }

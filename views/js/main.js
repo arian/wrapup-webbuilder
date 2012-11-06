@@ -8,6 +8,7 @@ var string = require('prime/es5/string');
 
 require('elements/lib/domready')(function(){
 
+	// editor with options
 	var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
 		lineNumbers: true,
 		matchBrackets: true,
@@ -15,15 +16,45 @@ require('elements/lib/domready')(function(){
 		indentWithTabs: true
 	});
 
+	// simple editor features we need
+	function append(text){
+		var pos = editor.getCursor();
+		editor.replaceRange(text, pos);
+	}
+
+	function set(text){
+		editor.setValue(text);
+	}
+
+	// appending new snippets to the editor
 	$('.snippets a').on('click', function(event){
 		e(event).preventDefault();
 		var name = this.getAttribute('href').slice(1);
 		var snippet = snippets[name];
-		if (!snippet) return console.warn(name + ' does not exist');
-
-		var pos = editor.getCursor();
-		editor.replaceRange(snippet, pos);
-
+		if (!snippet) console.warn(name + ' does not exist');
+		else append(snippet);
 	});
+
+	// load from the file input
+	(function(file){
+		if (!file || !file[0]) return;
+
+		// FileReader not supported, hide the input field
+		if (typeof FileReader == 'undefined'){
+			file.parent('.load').addClass('hidden');
+		}
+
+		// when reading the file is ready
+		var reader = new FileReader();
+		reader.onload = function(event){
+			set(event.target.result);
+		};
+
+		// after a file was chosen
+		file.on('change', function(){
+			reader.readAsText(file[0].files[0]);
+		});
+
+	})($('.load input'));
 
 });

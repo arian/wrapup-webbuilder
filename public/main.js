@@ -23,14 +23,32 @@
                 theme: "monokai",
                 indentWithTabs: true
             });
+            function append(text) {
+                var pos = editor.getCursor();
+                editor.replaceRange(text, pos);
+            }
+            function set(text) {
+                editor.setValue(text);
+            }
             $(".snippets a").on("click", function(event) {
                 e(event).preventDefault();
                 var name = this.getAttribute("href").slice(1);
                 var snippet = snippets[name];
-                if (!snippet) return console.warn(name + " does not exist");
-                var pos = editor.getCursor();
-                editor.replaceRange(snippet, pos);
+                if (!snippet) console.warn(name + " does not exist"); else append(snippet);
             });
+            (function(file) {
+                if (!file || !file[0]) return;
+                if (typeof FileReader == "undefined") {
+                    file.parent(".load").addClass("hidden");
+                }
+                var reader = new FileReader;
+                reader.onload = function(event) {
+                    set(event.target.result);
+                };
+                file.on("change", function() {
+                    reader.readAsText(file[0].files[0]);
+                });
+            })($(".load input"));
         });
     },
     "1": function(require, module, exports, global) {
