@@ -1,88 +1,29 @@
+/*global snippets:true CodeMirror:true*/
+"use strict";
 
-var $ = require('nodes');
-$.use(require('slick'));
+var $ = require('elements');
+require('elements/lib/traversal');
+var e = require('elements-util/lib/event');
 var string = require('prime/es5/string');
 
-var CodeMirror = window.CodeMirror;
+require('elements/lib/domready')(function(){
 
-$.ready(function(){
-
-	var snippets = {};
-
-	var onChange = function(editor, change){
-		// probably a remove action
-		if (change.text.join() === '') for (var name in snippets){
-			var snippet = snippets[name],
-				mark = snippet.mark;
-			if (!mark) continue;
-			var pos = mark.find(),
-				mf = pos.from, mt = pos.to,
-				cf = change.from, ct = change.to;
-			if (cf.line <= mf.line && cf.ch <= mf.ch && ct.line >= mt.line && ct.ch >= mt.ch){
-				snippet.checkbox.checked(false);
-				delete snippets[name];
-			}
-		}
-	};
-
-	var textarea = document.getElementById('editor');
-	var value = string.trim(textarea.value);
-	textarea.value = '';
-
-	var editor = CodeMirror.fromTextArea(textarea, {
-		mode: 'javascript',
-		indentWithTabs: true,
+	var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
 		lineNumbers: true,
 		matchBrackets: true,
-		indentUnit: 4,
 		theme: 'monokai',
-		onChange: onChange
+		indentWithTabs: true
 	});
 
-	// TODO global editor variable for debugging
-	window.editor = editor;
+	$('.snippets a').on('click', function(event){
+		e(event).preventDefault();
+		var name = this.getAttribute('href').slice(1);
+		var snippet = snippets[name];
+		if (!snippet) return console.warn(name + ' does not exist');
 
-	editor.setValue(value);
+		var pos = editor.getCursor();
+		editor.replaceRange(snippet, pos);
 
-	// indent lines correctly, might have some indention from the HTML
-	var lines = editor.lineCount();
-	for (var i = 0; i < lines; i++) editor.indentLine(i);
-
-	$('input.package').handle(function(){
-
-		var name = this.getAttribute('name');
-		var snippet = $('#' + name + '-snippet')[0].innerHTML;
-		snippet = "\n" + string.trim(snippet) + "\n";
-		var lines = snippet.split("\n").length - 1;
-
-		var mark;
-
-		var object = snippets[name] = {
-			name: name,
-			snippet: snippet,
-			mark: mark,
-			lines: lines,
-			checkbox: this
-		};
-
-		this.on('change', function(){
-
-			var checked = this.checked();
-			var pos;
-
-			if (checked && !mark){
-				pos = editor.getCursor();
-				editor.replaceRange(snippet, pos);
-				var to = {line: pos.line + lines, ch: 0};
-				object.mark = mark = editor.markText(pos, to);
-				for (var i = pos.line; i < to.line; i++) editor.indentLine(i);
-			} else if (!checked && mark){
-				pos = mark.find();
-				editor.replaceRange('', pos.from, pos.to);
-				mark = object.mark = null;
-			}
-
-		});
 	});
 
 });

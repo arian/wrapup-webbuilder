@@ -1,82 +1,35 @@
 (function(modules) {
     var cache = {}, require = function(id) {
-        var module;
-        if (module = cache[id]) return module.exports;
-        module = cache[id] = {
-            exports: {}
-        };
-        var exports = module.exports;
-        modules[id].call(exports, require, module, exports, window);
+        var module = cache[id];
+        if (!module) {
+            module = cache[id] = {};
+            var exports = module.exports = {};
+            modules[id].call(exports, require, module, exports, window);
+        }
         return module.exports;
     };
     require("0");
 })({
     "0": function(require, module, exports, global) {
+        "use strict";
         var $ = require("1");
-        $.use(require("e"));
+        require("d");
+        var e = require("h");
         var string = require("9");
-        var CodeMirror = window.CodeMirror;
-        $.ready(function() {
-            var snippets = {};
-            var onChange = function(editor, change) {
-                if (change.text.join() === "") for (var name in snippets) {
-                    var snippet = snippets[name], mark = snippet.mark;
-                    if (!mark) continue;
-                    var pos = mark.find(), mf = pos.from, mt = pos.to, cf = change.from, ct = change.to;
-                    if (cf.line <= mf.line && cf.ch <= mf.ch && ct.line >= mt.line && ct.ch >= mt.ch) {
-                        snippet.checkbox.checked(false);
-                        delete snippets[name];
-                    }
-                }
-            };
-            var textarea = document.getElementById("editor");
-            var value = string.trim(textarea.value);
-            textarea.value = "";
-            var editor = CodeMirror.fromTextArea(textarea, {
-                mode: "javascript",
-                indentWithTabs: true,
+        require("i")(function() {
+            var editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
                 lineNumbers: true,
                 matchBrackets: true,
-                indentUnit: 4,
                 theme: "monokai",
-                onChange: onChange
+                indentWithTabs: true
             });
-            window.editor = editor;
-            editor.setValue(value);
-            var lines = editor.lineCount();
-            for (var i = 0; i < lines; i++) editor.indentLine(i);
-            $("input.package").handle(function() {
-                var name = this.getAttribute("name");
-                var snippet = $("#" + name + "-snippet")[0].innerHTML;
-                snippet = "\n" + string.trim(snippet) + "\n";
-                var lines = snippet.split("\n").length - 1;
-                var mark;
-                var object = snippets[name] = {
-                    name: name,
-                    snippet: snippet,
-                    mark: mark,
-                    lines: lines,
-                    checkbox: this
-                };
-                this.on("change", function() {
-                    var checked = this.checked();
-                    var pos;
-                    if (checked && !mark) {
-                        pos = editor.getCursor();
-                        console.log(pos);
-                        editor.replaceRange(snippet, pos);
-                        var to = {
-                            line: pos.line + lines,
-                            ch: 0
-                        };
-                        object.mark = mark = editor.markText(pos, to);
-                        for (var i = pos.line; i < to.line; i++) editor.indentLine(i);
-                    } else if (!checked && mark) {
-                        pos = mark.find();
-                        editor.replaceRange("", pos.from, pos.to);
-                        mark = object.mark = null;
-                    }
-                });
+            $(".snippets a").on("click", function(event) {
+                e(event).preventDefault();
+                var name = this.getAttribute("href").slice(1);
+                var snippet = snippets[name];
+                if (!snippet) return console.warn(name + " does not exist");
+                var pos = editor.getCursor();
+                editor.replaceRange(snippet, pos);
             });
         });
     },
@@ -87,7 +40,6 @@
         require("a");
         require("b");
         require("5");
-        require("d");
         module.exports = $;
     },
     "2": function(require, module, exports, global) {
@@ -100,10 +52,10 @@
         var instances = {};
         var search, sort;
         var $ = prime({
-            constructor: function nodes(n, context) {
+            constructor: function $(n, context) {
                 if (n == null) return null;
-                if (n instanceof Nodes) return n;
-                var self = new Nodes;
+                if (n instanceof elements) return n;
+                var self = new elements, uid;
                 if (n.nodeType || n === global) {
                     self[self.length++] = n;
                 } else if (typeof n === "string") {
@@ -113,7 +65,8 @@
                     for (var i = 0, l = n.length; i < l; i++) {
                         var nodes = $(n[i], context);
                         if (nodes && nodes.length) for (var j = 0, k = nodes.length; j < k; j++) {
-                            var node = nodes[j], uid = uniqueID(node);
+                            var node = nodes[j];
+                            uid = uniqueID(node);
                             if (!uniques[uid]) {
                                 self[self.length++] = node;
                                 uniques[uid] = true;
@@ -124,28 +77,40 @@
                 }
                 if (!self.length) return null;
                 if (self.length === 1) {
-                    var uid = uniqueID(self[0]);
+                    uid = uniqueID(self[0]);
                     return instances[uid] || (instances[uid] = self);
                 }
                 return self;
             }
         });
-        var Nodes = prime({
+        var elements = prime({
             inherits: $,
-            constructor: function Nodes() {
+            constructor: function elements() {
                 this.length = 0;
             },
             handle: function handle(method) {
-                var buffer = [], length = this.length;
+                var buffer = [], length = this.length, res;
                 if (length === 1) {
-                    var res = method.call(this, this[0], 0, buffer);
+                    res = method.call(this, this[0], 0, buffer);
                     if (res != null && res !== false && res !== true) buffer.push(res);
                 } else for (var i = 0; i < length; i++) {
-                    var node = this[i], res = method.call($(node), node, i, buffer);
+                    var node = this[i];
+                    res = method.call($(node), node, i, buffer);
                     if (res === false || res === true) break;
                     if (res != null) buffer.push(res);
                 }
                 return buffer;
+            },
+            remove: function(destroy) {
+                var res = this.handle(function(node) {
+                    var parent = node.parentNode;
+                    if (parent) parent.removeChild(node);
+                    if (destroy) {
+                        delete instances[uniqueID(node)];
+                        return node;
+                    }
+                });
+                return destroy ? res : this;
             }
         });
         $.use = function(extension) {
@@ -242,65 +207,76 @@
                 return this;
             }
         });
-        $.implement(function() {
-            var properties = {};
-            array.forEach("type,value,name,href,title".split(","), function(name) {
-                properties[name] = function(value) {
-                    if (arguments.length) {
-                        this.forEach(function(node) {
-                            node[name] = value;
-                        });
-                        return this;
-                    }
-                    return this[0][name];
-                };
-            });
-            return properties;
-        }());
-        $.implement(function() {
-            var booleans = {};
-            array.forEach("checked,disabled,selected".split(","), function(name) {
-                booleans[name] = function(value) {
-                    if (arguments.length) {
-                        this.forEach(function(node) {
-                            node[name] = !!value;
-                        });
-                        return this;
-                    }
-                    return !!this[0][name];
-                };
-            });
-            return booleans;
-        }());
+        var accessors = {};
+        array.forEach("type,value,name,href,title,id".split(","), function(name) {
+            accessors[name] = function(value) {
+                if (value !== undefined) {
+                    this.forEach(function(node) {
+                        node[name] = value;
+                    });
+                    return this;
+                }
+                return this[0][name];
+            };
+        });
+        array.forEach("checked,disabled,selected".split(","), function(name) {
+            accessors[name] = function(value) {
+                if (value !== undefined) {
+                    this.forEach(function(node) {
+                        node[name] = !!value;
+                    });
+                    return this;
+                }
+                return !!this[0][name];
+            };
+        });
         var classes = function(className) {
             var classNames = string.clean(className).split(" "), uniques = {};
             return array.filter(classNames, function(className) {
                 if (className !== "" && !uniques[className]) return uniques[className] = className;
             }).sort();
         };
+        accessors.className = function(className) {
+            if (className !== undefined) {
+                this.forEach(function(node) {
+                    node.className = classes(className).join(" ");
+                });
+                return this;
+            }
+            return classes(this[0].className).join(" ");
+        };
+        $.implement({
+            attribute: function(name, value) {
+                var accessor = accessors[name];
+                if (accessor) return accessor.call(this, value);
+                if (value != null) return this.setAttribute(name, value); else if (value === null) return this.removeAttribute(name); else if (value === undefined) return this.getAttribute(name);
+            }
+        });
+        $.implement(accessors);
+        $.implement({
+            check: function() {
+                return this.checked(true);
+            },
+            uncheck: function() {
+                return this.checked(false);
+            },
+            disable: function() {
+                return this.disabled(true);
+            },
+            enable: function() {
+                return this.disabled(false);
+            },
+            select: function() {
+                return this.selected(true);
+            },
+            deselect: function() {
+                return this.selected(false);
+            }
+        });
         $.implement({
             classNames: function() {
                 return classes(this[0].className);
             },
-            className: function(className) {
-                if (arguments.length) {
-                    this.forEach(function(node) {
-                        node.className = classes(className).join(" ");
-                    });
-                    return this;
-                }
-                return this.classNames().join(" ");
-            },
-            id: function(id) {
-                var node = this[0];
-                if (arguments.length) node.id = id; else return node.id;
-                return this;
-            },
-            tag: function() {
-                return this[0].tagName.toLowerCase();
-            }
-        });
-        $.implement({
             hasClass: function(className) {
                 return array.indexOf(this.classNames(), className) > -1;
             },
@@ -331,17 +307,41 @@
             if (classes.length) str += "." + classes.join(".");
             return str;
         };
+        var textProperty = document.createElement("div").textContent == null ? "innerText" : "textContent";
+        $.implement({
+            tag: function() {
+                return this[0].tagName.toLowerCase();
+            },
+            html: function(html) {
+                if (html != null) {
+                    this.forEach(function(node) {
+                        node.innerHTML = html;
+                    });
+                    return this;
+                }
+                return this[0].innerHTML;
+            },
+            text: function(text) {
+                if (text != undefined) {
+                    this.forEach(function(node) {
+                        node[textProperty] = text;
+                    });
+                    return this;
+                }
+                return this[0][textProperty];
+            }
+        });
         module.exports = $;
     },
     "5": function(require, module, exports, global) {
         "use strict";
-        var $ = require("2"), list = require("6").prototype;
+        var $ = require("2"), array = require("6").prototype;
         module.exports = $.implement({
-            forEach: list.forEach,
-            map: list.map,
-            filter: list.filter,
-            every: list.every,
-            some: list.some
+            forEach: array.forEach,
+            map: array.map,
+            filter: array.filter,
+            every: array.every,
+            some: array.some
         });
     },
     "6": function(require, module, exports, global) {
@@ -481,16 +481,16 @@
                 this[0].appendChild($(child)[0]);
                 return this;
             },
-            insertBefore: function(child) {
-                this[0].insertBefore($(child)[0]);
+            insertBefore: function(child, ref) {
+                this[0].insertBefore($(child)[0], $(ref)[0]);
                 return this;
             },
             removeChild: function(child) {
                 this[0].removeChild($(child)[0]);
                 return this;
             },
-            replaceChild: function(child) {
-                this[0].replaceChild($(child)[0]);
+            replaceChild: function(child, ref) {
+                this[0].replaceChild($(child)[0], $(ref)[0]);
                 return this;
             }
         });
@@ -528,13 +528,6 @@
         });
         $.implement({
             insert: $.prototype.bottom,
-            remove: function() {
-                this.forEach(function(node) {
-                    var parent = node.parentNode;
-                    if (parent) parent.removeChild(node);
-                });
-                return this;
-            },
             replace: function(element) {
                 element = $(element)[0];
                 element.parentNode.replaceChild(this[0], element);
@@ -573,11 +566,20 @@
             },
             off: function(event, handle) {
                 this.handle(function(node) {
-                    NodesEmitter.parent.off.call(this, event, handle);
                     var domListeners = this._domListeners, domEvent, listeners = this._listeners, events;
-                    if (domListeners && (domEvent = domListeners[event]) && listeners && (events = listeners[event]) && !events.length) {
-                        removeEventListener(node, event, domEvent);
-                        delete domListeners[event];
+                    if (domListeners && (domEvent = domListeners[event]) && listeners && (events = listeners[event])) {
+                        NodesEmitter.parent.off.call(this, event, handle);
+                        var empty = true, k, l;
+                        for (k in events) {
+                            empty = false;
+                            break;
+                        }
+                        if (empty) {
+                            removeEventListener(node, event, domEvent);
+                            delete domListeners[event];
+                            for (l in domListeners) empty = false;
+                            if (empty) delete this._domListeners;
+                        }
                     }
                 });
                 return this;
@@ -623,58 +625,59 @@
     },
     d: function(require, module, exports, global) {
         "use strict";
-        var $ = require("b");
-        var readystatechange = "onreadystatechange" in document, shouldPoll = false, loaded = false, readys = [], checks = [], ready = null, timer = null, test = document.createElement("div"), doc = $(document), win = $(window);
-        var domready = function() {
-            if (timer) timer = clearTimeout(timer);
-            if (!loaded) {
-                if (readystatechange) doc.off("readystatechange", check);
-                doc.off("DOMContentLoaded", domready);
-                win.off("load", domready);
-                loaded = true;
-                for (var i = 0; ready = readys[i++]; ) ready.call($);
-            }
-            return loaded;
-        };
-        var check = function() {
-            for (var i = checks.length; i--; ) if (checks[i]()) return domready();
-            return false;
-        };
-        var poll = function() {
-            clearTimeout(timer);
-            if (!check()) timer = setTimeout(poll, 1e3 / 60);
-        };
-        if (document.readyState) {
-            var complete = function() {
-                return !!/loaded|complete/.test(document.readyState);
+        var $ = require("2"), array = require("6"), slick = require("e");
+        $.use(slick);
+        var walk = function(combinator, method) {
+            return function(expression) {
+                var parts = slick.parse(expression || "*");
+                expression = array.map(parts, function(part) {
+                    return combinator + " " + part;
+                }).join(", ");
+                if (this.length === 1) return $(expression, this[0]);
+                if (method === "search") return $(this.handle(function(node, i, buffer) {
+                    buffer.push.apply(buffer, slick.search(expression, node));
+                }));
+                if (method === "find") return $(this.handle(function(node) {
+                    return slick.find(expression, node);
+                }));
             };
-            checks.push(complete);
-            if (!complete()) {
-                if (readystatechange) doc.on("readystatechange", check); else shouldPoll = true;
-            } else {
-                domready();
-            }
-        }
-        if (test.doScroll) {
-            var scrolls = function() {
-                try {
-                    test.doScroll();
-                    return true;
-                } catch (e) {}
-                return false;
-            };
-            if (!scrolls()) {
-                checks.push(scrolls);
-                shouldPoll = true;
-            }
-        }
-        if (shouldPoll) poll();
-        doc.on("DOMContentLoaded", domready);
-        win.on("load", domready);
-        $.ready = function(ready) {
-            loaded ? ready.call($) : readys.push(ready);
-            return $;
         };
+        $.implement({
+            search: function(expression) {
+                if (this.length === 1) return $(expression, this[0]);
+                return $(this.handle(function(node, i, buffer) {
+                    buffer.push.apply(buffer, slick.search(expression, node));
+                }));
+            },
+            find: function(expression) {
+                if (this.length === 1) return $(slick.find(expression, this[0]));
+                return $(this.handle(function(node, i, buffer) {
+                    buffer.push(slick.find(expression, node));
+                }));
+            },
+            matches: function(expression) {
+                return slick.matches(this[0], expression);
+            },
+            nextSiblings: walk("~", "search"),
+            nextSibling: walk("+", "find"),
+            previousSiblings: walk("!~", "search"),
+            previousSibling: walk("!+", "find"),
+            children: walk(">", "find"),
+            parent: function(expression) {
+                return $(this.handle(function(node, i, buffer) {
+                    while (node = node.parentNode) {
+                        if (!expression || slick.matches(node, expression)) return !buffer.push(node);
+                    }
+                }));
+            },
+            parents: function(expression) {
+                return $(this.handle(function(node, i, buffer) {
+                    while (node = node.parentNode) {
+                        if (!expression || slick.matches(node, expression)) buffer.push(node);
+                    }
+                }));
+            }
+        });
         module.exports = $;
     },
     e: function(require, module, exports, global) {
@@ -1249,5 +1252,89 @@
             return nodes;
         };
         module.exports = slick;
+    },
+    h: function(require, module, exports, global) {
+        "use strict";
+        var prime = require("3");
+        var $ = require("1");
+        var Event = prime({
+            constructor: function(event) {
+                if (!(this instanceof Event)) return new Event(event);
+                this.event = event;
+            },
+            type: function() {
+                return this.event.type;
+            },
+            target: function() {
+                var event = this.event;
+                var target = event.target || event.srcElement;
+                while (target && target.nodeType == 3) target = target.parentNode;
+                return $(target);
+            },
+            stopPropagation: function() {
+                if (this.event.stopPropagation) this.event.stopPropagation(); else this.event.cancelBubble = true;
+                return this;
+            },
+            preventDefault: function() {
+                if (this.event.preventDefault) this.event.preventDefault(); else this.event.returnValue = false;
+                return this;
+            }
+        });
+        module.exports = Event;
+    },
+    i: function(require, module, exports, global) {
+        "use strict";
+        var $ = require("b");
+        var readystatechange = "onreadystatechange" in document, shouldPoll = false, loaded = false, readys = [], checks = [], ready = null, timer = null, test = document.createElement("div"), doc = $(document), win = $(window);
+        var domready = function() {
+            if (timer) timer = clearTimeout(timer);
+            if (!loaded) {
+                if (readystatechange) doc.off("readystatechange", check);
+                doc.off("DOMContentLoaded", domready);
+                win.off("load", domready);
+                loaded = true;
+                for (var i = 0; ready = readys[i++]; ) ready();
+            }
+            return loaded;
+        };
+        var check = function() {
+            for (var i = checks.length; i--; ) if (checks[i]()) return domready();
+            return false;
+        };
+        var poll = function() {
+            clearTimeout(timer);
+            if (!check()) timer = setTimeout(poll, 1e3 / 60);
+        };
+        if (document.readyState) {
+            var complete = function() {
+                return !!/loaded|complete/.test(document.readyState);
+            };
+            checks.push(complete);
+            if (!complete()) {
+                if (readystatechange) doc.on("readystatechange", check); else shouldPoll = true;
+            } else {
+                domready();
+            }
+        }
+        if (test.doScroll) {
+            var scrolls = function() {
+                try {
+                    test.doScroll();
+                    return true;
+                } catch (e) {}
+                return false;
+            };
+            if (!scrolls()) {
+                checks.push(scrolls);
+                shouldPoll = true;
+            }
+        }
+        if (shouldPoll) poll();
+        doc.on("DOMContentLoaded", domready);
+        win.on("load", domready);
+        module.exports = function(ready) {
+            loaded ? ready() : readys.push(ready);
+            return null;
+        };
     }
 });

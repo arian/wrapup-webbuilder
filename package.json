@@ -21,12 +21,14 @@
   "license": "MIT",
   "dependencies": {
     "express": "3",
-    "wrapup": "0.9.6",
+    "wrapup": "0.9.12",
     "jade": "0.27",
     "stylus": "0.29",
     "async": "0.1",
-    "nodes": "0.0.6-alpha",
+    "elements": "0.0.7-alpha",
+    "elements-util": "0.0.4",
     "slick": "1.9.1-alpha",
-    "prime": "0.0.5-alpha"
+    "prime": "0.0.5-alpha",
+    "moofx": "3.0.12"
   }
 }

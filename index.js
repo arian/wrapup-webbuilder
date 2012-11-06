@@ -1,7 +1,7 @@
+"use strict";
 
 var fs = require('fs');
 var wrapup = require('wrapup');
-var async = require('async');
 
 var express = require('express');
 var app = express();
@@ -20,7 +20,7 @@ app.configure('development', function(){
 	}));
 
 	// wrapup middleware
-	app.use(require('./lib/wrapupMiddleware.js')({
+	app.use(require('./middleware/wrapup.js')({
 		require: __dirname + '/views/js/main.js',
 		dest: __dirname + '/public/main.js'
 	}));
@@ -30,45 +30,12 @@ app.configure('development', function(){
 
 });
 
-app.get('/', function(req, res, next){
-	res.render('index');
-});
+var renderIndex   = require('./middleware/renderIndex');
+var loadSnippets  = require('./middleware/loadSnippets');
+var buildJSResult = require('./middleware/buildJSResult');
 
-var UID = new Date();
-
-app.post('/', function(req, res, next){
-
-	var js = req.body.setup;
-	var compress = !!req.body.compress;
-
-	var uid = (UID++).toString(36);
-	var dir = __dirname + '/tmp/' + uid;
-	var file = dir + '/main.js';
-
-	async.series([
-		async.apply(fs.mkdir, dir),
-		async.apply(fs.writeFile, file, js),
-		function(callback){
-			var wrup = wrapup();
-			wrup.require(file);
-
-			var out = wrup.up({
-				compress: compress
-			});
-
-			res.type('js');
-			res.attachment('main.js');
-			res.send(out);
-
-			callback();
-		},
-		async.apply(fs.unlink, file),
-		async.apply(fs.rmdir, dir)
-	], function(err){
-		if (err) next(err);
-	});
-
-});
+app.get('/', loadSnippets, renderIndex);
+app.post('/', buildJSResult);
 
 app.use(express['static'](__dirname + '/public'));
 

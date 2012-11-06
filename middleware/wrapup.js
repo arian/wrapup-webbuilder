@@ -1,3 +1,4 @@
+"use stirct";
 
 var wrapup = require('wrapup');
 var fs = require('fs');
@@ -14,3 +15,4 @@ module.exports = function(options){
 		res.send(js);
 	};
 };
+

@@ -3,21 +3,39 @@ body
 	font 12px Helvetica, Arial, sans-serif
 
 .CodeMirror
-	border 1px solid black
 	background #efefef
+	border 1px solid black
+
+.snippets
+	list-style none
+	margin 0
+	padding 0
+
+	a
+		border-radius 5px
+		color black
+		display block
+		padding 5px
+
+		&:hover
+			background #e5e5e5
+			box-shadow 1px 1px 2px rgba(0,0,0,0.3)
+		&:active
+			box-shadow inset 1px 1px 5px rgba(0,0,0,0.3)
+			padding 6px 4px 4px 6px
 
 form label
 	display block
 
 @media screen and (min-width: 700px)
 
-	.labels,
+	.snippets,
 	.editor
 		float left
 
-	.labels
-		width 20%
+	.snippets
 		margin-right 2%
+		width 20%
 
 	.editor
 		width: 78%

@@ -8,37 +8,23 @@ html
 		link(href="/js/codemirror/lib/codemirror.css", rel="stylesheet")
 		link(href="/js/codemirror/theme/monokai.css", rel="stylesheet")
 
+		script var snippets = !{JSON.stringify(snippets)};
+
 		script(src="/main.js")
 		link(href="/layout.css", rel="stylesheet")
 
 	body
 
-		h1= "Download Wrapup'd NPM packages (prime/nodes/slick)"
+		h1= "Download WrapUp'd NPM packages (prime/nodes/slick)"
 
 		form(method="post", action="/")
 
-			.labels
-				label
-					input.package(type="checkbox", value="prime", name="prime")
-					| Prime
-					script(type="text/snippet", id="prime-snippet")
-						| // export prime
-						| global.prime = require('prime');
+			ul.snippets
+				each code, name in snippets
+					li
+						a(href="##{name}")
+							| #{name}
 
-				label
-					input.package(type="checkbox", value="nodes", name="nodes")
-					| Nodes
-					script(type="text/snippet", id="nodes-snippet")
-						| // export nodes
-						| global.nodes = require('nodes');
-
-				label
-					input.package(type="checkbox", value="slick", name="slick")
-					| Slick
-					script(type="text/snippet", id="slick-snippet")
-						| // export slick
-						| global.slick = require('slick');
-						| require('nodes').use(global.slick);
 			.editor
 				textarea#editor(name="setup")
 
@@ -49,7 +35,10 @@ html
 					| Compress the output JS
 
 				label
-					input(type="submit", value="Download your wrapup'd version");
+					input(type="submit", name="wrup", value="Download your wrapup'd version");
+
+				label
+					input(type="submit", name="editor", value="Just download the code in the editor");
 
 
 
