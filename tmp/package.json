@@ -1,0 +1,11 @@
+{
+  "name": "wrapup-webbuilder-packages",
+  "version": "0.0.0",
+  "description": "A web builder for downloading browser wrapup'd JavaScript",
+  "dependencies": {
+    "elements": "0.0.7-alpha",
+    "slick": "1.9.1-alpha",
+    "prime": "0.0.5-alpha",
+    "moofx": "3.0.12"
+  }
+}

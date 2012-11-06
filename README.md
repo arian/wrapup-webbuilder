@@ -11,7 +11,7 @@ The idea is that the user will see an JavaScript Editor field (CodeMirror)
 where he or she can customize the `main.js` file, using `require()` calls,
 export it on `global`, or don't export at all.
 
-With a simple interface with checkboxes and select fields, a main.js file
+With a simple interface with buttons and select fields, a main.js file
 can be generated in the Editor. By giving the user access to the editor adds
 extra power for advanced users.
 
@@ -31,3 +31,22 @@ extra power for advanced users.
 - Stylus
 - Wrapup
 - CodeMirror
+
+### Installation
+
+```
+git clone git://github.com/arian/wrapup-webbuilder.git
+cd wrapup-webbuilder
+npm install
+git submodule init
+cd tmp
+npm install
+cd ..
+node index.js
+```
+
+### Modules that can be downloaded
+
+In `./tmp/package.json` the modules that can be downloaded and their versions
+are specified. After an `npm install` in the `tmp` folder will finish updating
+the available modules.
