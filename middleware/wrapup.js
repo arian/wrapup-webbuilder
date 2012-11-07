@@ -15,4 +15,3 @@ module.exports = function(options){
 		res.send(js);
 	};
 };
-

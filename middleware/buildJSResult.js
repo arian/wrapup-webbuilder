@@ -129,7 +129,7 @@ function editor(req, res, next){
 	res.send(req.body.setup);
 }
 
-module.exports =  function buildJSResult(req, res, next){
+module.exports = function buildJSResult(req, res, next){
 	if (req.body.setup == null) throw new Error("Editor field is not set");
 	if (req.body.wrup) wrup(req, res, next);
 	else if (req.body.editor) editor(req, res, next);
