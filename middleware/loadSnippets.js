@@ -7,7 +7,8 @@ var async = require('async');
 var snippets;
 
 // a static quick list of the filenames
-var names = ['prime', 'elements', 'moofx', 'slick'];
+var modules = require('../package.json').modules;
+var names = Object.keys(modules);
 var files = names.map(function(file){
 	return __dirname + '/../views/snippets/' + file + '.js';
 });
@@ -24,6 +25,9 @@ function loadSnippets(callback){
 }
 
 module.exports = function(req, res, next){
+
+	res.locals.modules = modules;
+
 	if (snippets){
 		res.locals.snippets = snippets;
 		next();

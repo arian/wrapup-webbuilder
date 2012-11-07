@@ -12,38 +12,49 @@ body
 .CodeMirror
 	border 1px solid black
 
-.load
-	input
-		display block
+.aside
 
-.snippets
-	list-style none
-	margin 0
-	padding 0
+	.load
+		input
+			display block
 
-	a
-		border-radius 5px
-		color black
-		display block
-		padding 5px
+	.snippets
+		list-style none
+		margin 0
+		padding 0
 
-		&:hover
-			background #e5e5e5
-			box-shadow 1px 1px 2px rgba(0,0,0,0.3)
-		&:active
-			box-shadow inset 1px 1px 5px rgba(0,0,0,0.3)
-			padding 6px 4px 4px 6px
+		li
+			overflow hidden
+			padding 5px
+
+			select
+				float left
+				width 100px
+
+			a
+				border-radius 5px
+				color black
+				display block
+				margin-left 110px
+				padding 5px
+
+				&:hover
+					background #e5e5e5
+					box-shadow 1px 1px 2px rgba(0,0,0,0.3)
+				&:active
+					box-shadow inset 1px 1px 5px rgba(0,0,0,0.3)
+					padding 6px 4px 4px 6px
 
 form label
 	display block
 
 @media screen and (min-width: 700px)
 
-	.snippets,
+	.aside,
 	.editor
 		float left
 
-	.snippets
+	.aside
 		margin-right 2%
 		width 20%
 

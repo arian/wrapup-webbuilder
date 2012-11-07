@@ -7,25 +7,34 @@ body {
 .CodeMirror {
   border: 1px solid #000;
 }
-.load input {
+.aside .load input {
   display: block;
 }
-.snippets {
+.aside .snippets {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.snippets a {
+.aside .snippets li {
+  overflow: hidden;
+  padding: 5px;
+}
+.aside .snippets li select {
+  float: left;
+  width: 100px;
+}
+.aside .snippets li a {
   border-radius: 5px;
   color: #000;
   display: block;
+  margin-left: 110px;
   padding: 5px;
 }
-.snippets a:hover {
+.aside .snippets li a:hover {
   background: #e5e5e5;
   box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
-.snippets a:active {
+.aside .snippets li a:active {
   box-shadow: inset 1px 1px 5px rgba(0,0,0,0.3);
   padding: 6px 4px 4px 6px;
 }
@@ -33,11 +42,11 @@ form label {
   display: block;
 }
 @media screen and (min-width: 700px) {
-  .snippets,
+  .aside,
   .editor {
     float: left;
   }
-  .snippets {
+  .aside {
     margin-right: 2%;
     width: 20%;
   }

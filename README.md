@@ -39,14 +39,20 @@ git clone git://github.com/arian/wrapup-webbuilder.git
 cd wrapup-webbuilder
 npm install
 git submodule init
-cd tmp
-npm install
-cd ..
+node ./bin/createBaseModules.js
 node index.js
 ```
 
-### Modules that can be downloaded
+### Modules and versions that can be downloaded
 
-In `./tmp/package.json` the modules that can be downloaded and their versions
-are specified. After an `npm install` in the `tmp` folder will finish updating
-the available modules.
+In `package.json` there is a field `modules`. This are npm package names and
+their versions from npm. These are the packages and versions a user can
+download. Before they can be downloaded however, the packages have  to be
+downloaded locally to the `modules` directory. This can be done with the
+following command.
+
+	node ./bin/createBaseModules.js
+
+The `modules` folder will now contain folders like `prime@0.0.5` or
+`elements@0.0.7`. These are the packages the download will symlink to and
+create a build with wrapup.
