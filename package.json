@@ -21,7 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "express": "3",
-    "wrapup": "0.9.12",
+    "wrapup": "~0.10",
     "jade": "0.27",
     "stylus": "0.29",
     "async": "0.1",

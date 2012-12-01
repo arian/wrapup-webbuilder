@@ -1,7 +1,6 @@
 "use strict";
 
 var fs = require('fs');
-var wrapup = require('wrapup');
 
 var express = require('express');
 var app = express();

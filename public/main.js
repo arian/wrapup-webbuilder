@@ -8,21 +8,29 @@
         }
         return module.exports;
     };
-    require("0");
+    require("0")
 })({
     "0": function(require, module, exports, global) {
-        "use strict";
+        /*global snippets:true CodeMirror:true*/
+                "use strict";
+
         var $ = require("1");
+
         require("d");
+
         var e = require("h");
+
         var string = require("9");
+
         require("i")(function() {
+            // editor with options
             var editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
                 lineNumbers: true,
                 matchBrackets: true,
                 theme: "monokai",
                 indentWithTabs: true
             });
+            // simple editor features we need
             function append(text) {
                 var pos = editor.getCursor();
                 editor.replaceRange(text, pos);
@@ -30,21 +38,26 @@
             function set(text) {
                 editor.setValue(text);
             }
+            // appending new snippets to the editor
             $(".snippets a").on("click", function(event) {
                 e(event).preventDefault();
                 var name = this.getAttribute("href").slice(1);
                 var snippet = snippets[name];
                 if (!snippet) console.warn(name + " does not exist"); else append(snippet);
             });
+            // load from the file input
             (function(file) {
                 if (!file || !file[0]) return;
+                // FileReader not supported, hide the input field
                 if (typeof FileReader == "undefined") {
                     file.parent(".load").addClass("hidden");
                 }
-                var reader = new FileReader;
+                // when reading the file is ready
+                var reader = new FileReader();
                 reader.onload = function(event) {
                     set(event.target.result);
                 };
+                // after a file was chosen
                 file.on("change", function() {
                     reader.readAsText(file[0].files[0]);
                 });
@@ -52,35 +65,60 @@
         });
     },
     "1": function(require, module, exports, global) {
-        "use strict";
+        /*
+require everything and export
+*/
+                "use strict";
+
         var $ = require("2");
+
         require("4");
+
         require("a");
+
         require("b");
+
         require("5");
+
         module.exports = $;
     },
     "2": function(require, module, exports, global) {
-        "use strict";
+        /*
+elements
+*/
+                "use strict";
+
         var prime = require("3");
+
+        // uniqueID
         var uniqueIndex = 0;
+
         var uniqueID = function(n) {
             return n === global ? "global" : n.uniqueNumber || (n.uniqueNumber = "n:" + (uniqueIndex++).toString(36));
         };
+
         var instances = {};
+
+        // `search` is the selector engine
+        // `sort` is the elements sorter
         var search, sort;
+
+        // the exposed prime
         var $ = prime({
             constructor: function $(n, context) {
                 if (n == null) return null;
                 if (n instanceof elements) return n;
-                var self = new elements, uid;
+                var self = new elements(), uid;
                 if (n.nodeType || n === global) {
                     self[self.length++] = n;
                 } else if (typeof n === "string") {
                     if (search) search(n, context, self);
                 } else if (n.length) {
+                    // this could be an array, or any object with a length attribute,
+                    // including another instance of elements from another interface.
                     var uniques = {};
                     for (var i = 0, l = n.length; i < l; i++) {
+                        // perform elements flattening
                         var nodes = $(n[i], context);
                         if (nodes && nodes.length) for (var j = 0, k = nodes.length; j < k; j++) {
                             var node = nodes[j];
@@ -94,6 +132,7 @@
                     if (sort && self.length > 1) sort(self);
                 }
                 if (!self.length) return null;
+                // when length is 1 always use the same elements instance
                 if (self.length === 1) {
                     uid = uniqueID(self[0]);
                     return instances[uid] || (instances[uid] = self);
@@ -101,6 +140,9 @@
                 return self;
             }
         });
+
+        // the resulting prime
+        // this also makes it impossible to override handle (short of constructor hijacking)
         var elements = prime({
             inherits: $,
             constructor: function elements() {
@@ -131,26 +173,37 @@
                 return destroy ? res : this;
             }
         });
+
         $.use = function(extension) {
             $.implement(prime.create(extension.prototype));
             if (extension.search) search = extension.search;
             if (extension.sort) sort = extension.sort;
             return this;
         };
+
         module.exports = $;
     },
     "3": function(require, module, exports, global) {
-        "use strict";
+        /*
+prime
+ - prototypal inheritance
+*/
+                "use strict";
+
         var has = function(self, key) {
             return Object.hasOwnProperty.call(self, key);
         };
+
         var each = function(object, method, context) {
             for (var key in object) if (method.call(context, object[key], key, object) === false) break;
             return object;
         };
+
+        /*(es5 && fixEnumBug)?*/
         if (!{
             valueOf: 0
         }.propertyIsEnumerable("valueOf")) {
+            // fix stupid IE enum 🐛
             var buggy = "constructor,toString,valueOf,hasOwnProperty,isPrototypeOf,propertyIsEnumerable,toLocaleString".split(","), proto = Object.prototype;
             each = function(object, method, context) {
                 var i = buggy.length, key, value;
@@ -163,43 +216,69 @@
                 return object;
             };
         }
+
+        /*:*/
         var create = Object.create || function(self) {
             var F = function() {};
             F.prototype = self;
-            return new F;
+            return new F();
         };
+
+        /*:*/
         var mutator = function(key, value) {
             this.prototype[key] = value;
         };
+
         var implement = function(obj) {
             each(obj, function(value, key) {
                 if (key !== "constructor" && key !== "inherits" && key !== "mutator") this.mutator(key, value);
             }, this);
             return this;
         };
+
         var prime = function(proto) {
             var superprime = proto.inherits, superproto;
             if (superprime) superproto = superprime.prototype;
+            // if our nice proto object has no own constructor property
+            // then we proceed using a ghosting constructor that all it does is
+            // call the parent's constructor if it has a superprime, else an empty constructor
+            // proto.constructor becomes the effective constructor
             var constructor = has(proto, "constructor") ? proto.constructor : superprime ? function() {
                 return superproto.constructor.apply(this, arguments);
             } : function() {};
             if (superprime) {
+                // inherit from superprime
                 var cproto = constructor.prototype = create(superproto);
+                // setting constructor.parent to superprime.prototype
+                // because it's the shortest possible absolute reference
                 constructor.parent = superproto;
                 cproto.constructor = constructor;
             }
+            // inherit (kindof inherit) mutator
             constructor.mutator = proto.mutator || superprime && superprime.mutator || mutator;
+            // copy implement (this should never change)
             constructor.implement = implement;
+            // finally implement proto and return constructor
             return constructor.implement(proto);
         };
+
         prime.each = each;
+
         prime.has = has;
+
         prime.create = create;
+
         module.exports = prime;
     },
     "4": function(require, module, exports, global) {
-        "use strict";
+        /*
+elements attributes
+*/
+                "use strict";
+
         var $ = require("5"), string = require("8"), array = require("6");
+
+        // attributes
         $.implement({
             setAttribute: function(name, value) {
                 this.forEach(function(node) {
@@ -225,7 +304,9 @@
                 return this;
             }
         });
+
         var accessors = {};
+
         array.forEach("type,value,name,href,title,id".split(","), function(name) {
             accessors[name] = function(value) {
                 if (value !== undefined) {
@@ -237,6 +318,8 @@
                 return this[0][name];
             };
         });
+
+        // booleans
         array.forEach("checked,disabled,selected".split(","), function(name) {
             accessors[name] = function(value) {
                 if (value !== undefined) {
@@ -248,12 +331,15 @@
                 return !!this[0][name];
             };
         });
+
+        // className
         var classes = function(className) {
             var classNames = string.clean(className).split(" "), uniques = {};
             return array.filter(classNames, function(className) {
                 if (className !== "" && !uniques[className]) return uniques[className] = className;
             }).sort();
         };
+
         accessors.className = function(className) {
             if (className !== undefined) {
                 this.forEach(function(node) {
@@ -263,6 +349,8 @@
             }
             return classes(this[0].className).join(" ");
         };
+
+        // attribute
         $.implement({
             attribute: function(name, value) {
                 var accessor = accessors[name];
@@ -270,7 +358,10 @@
                 if (value != null) return this.setAttribute(name, value); else if (value === null) return this.removeAttribute(name); else if (value === undefined) return this.getAttribute(name);
             }
         });
+
         $.implement(accessors);
+
+        // shortcuts
         $.implement({
             check: function() {
                 return this.checked(true);
@@ -291,6 +382,8 @@
                 return this.selected(false);
             }
         });
+
+        // classNames, has / add / remove Class
         $.implement({
             classNames: function() {
                 return classes(this[0].className);
@@ -318,6 +411,8 @@
                 return this;
             }
         });
+
+        // toString
         $.prototype.toString = function() {
             var tag = this.tag(), id = this.id(), classes = this.classNames();
             var str = tag;
@@ -325,7 +420,10 @@
             if (classes.length) str += "." + classes.join(".");
             return str;
         };
+
         var textProperty = document.createElement("div").textContent == null ? "innerText" : "textContent";
+
+        // tag, html, text
         $.implement({
             tag: function() {
                 return this[0].tagName.toLowerCase();
@@ -349,12 +447,19 @@
                 return this[0][textProperty];
             }
         });
+
         module.exports = $;
     },
     "5": function(require, module, exports, global) {
-        "use strict";
+        /*
+elements events
+*/
+                "use strict";
+
         var $ = require("2"), array = require("6").prototype;
+
         module.exports = $.implement({
+            // straight es5 prototypes (or emulated methods)
             forEach: array.forEach,
             map: array.map,
             filter: array.filter,
@@ -363,9 +468,16 @@
         });
     },
     "6": function(require, module, exports, global) {
-        "use strict";
+        /*
+array
+ - es5 array shell
+*/
+                "use strict";
+
         var shell = require("7");
+
         var proto = Array.prototype;
+
         var array = shell({
             filter: proto.filter || function(fn, context) {
                 var results = [];
@@ -406,18 +518,30 @@
                 return false;
             }
         });
+
         array.isArray = Array.isArray || function(self) {
             return Object.prototype.toString.call(self) === "[object Array]";
         };
+
+        /*:*/
         var methods = {};
+
         var names = "pop,push,reverse,shift,sort,splice,unshift,concat,join,slice,lastIndexOf,reduce,reduceRight".split(",");
+
         for (var i = 0, name, method; name = names[i++]; ) if (method = proto[name]) methods[name] = method;
+
         array.implement(methods);
+
         module.exports = array;
     },
     "7": function(require, module, exports, global) {
-        "use strict";
+        /*
+shell 🐚
+*/
+                "use strict";
+
         var prime = require("3"), slice = Array.prototype.slice;
+
         var shell = prime({
             mutator: function(key, method) {
                 this[key] = function(self) {
@@ -430,6 +554,7 @@
                 prototype: {}
             }
         });
+
         module.exports = function(proto) {
             var inherits = proto.inherits || (proto.inherits = shell);
             proto.constructor = prime.create(inherits);
@@ -437,63 +562,105 @@
         };
     },
     "8": function(require, module, exports, global) {
-        "use strict";
+        /*
+string methods
+ - inherits from es5/string
+*/
+                "use strict";
+
         var shell = require("7");
+
         var string = shell({
             inherits: require("9"),
+            /*(string.contains)?*/
             contains: function(string, separator) {
                 return (separator ? (separator + this + separator).indexOf(separator + string + separator) : (this + "").indexOf(string)) > -1;
             },
+            /*:*/
+            /*(string.clean)?*/
             clean: function() {
                 return string.trim((this + "").replace(/\s+/g, " "));
             },
+            /*:*/
+            /*(string.camelize)?*/
             camelize: function() {
                 return (this + "").replace(/-\D/g, function(match) {
                     return match.charAt(1).toUpperCase();
                 });
             },
+            /*:*/
+            /*(string.hyphenate)?*/
             hyphenate: function() {
                 return (this + "").replace(/[A-Z]/g, function(match) {
                     return "-" + match.toLowerCase();
                 });
             },
+            /*:*/
+            /*(string.capitalize)?*/
             capitalize: function() {
                 return (this + "").replace(/\b[a-z]/g, function(match) {
                     return match.toUpperCase();
                 });
             },
+            /*:*/
+            /*(string.escape)?*/
+            // « https://github.com/slevithan/XRegExp/blob/master/src/xregexp.js
             escape: function() {
                 return (this + "").replace(/([-.*+?^${}()|[\]\/\\])/g, "\\$1");
             },
+            /*:*/
+            /*(string.number)?*/
             number: function() {
                 return parseFloat(this);
             }
         });
+
+        /*(string.decode)?*/
         if (typeof JSON !== "undefined") string.implement({
             decode: function() {
                 return JSON.parse(this);
             }
         });
+
+        /*:*/
         module.exports = string;
     },
     "9": function(require, module, exports, global) {
-        "use strict";
+        /*
+string
+ - es5 string shell
+*/
+                "use strict";
+
         var shell = require("7");
+
         var proto = String.prototype;
+
         var string = shell({
             trim: proto.trim || function() {
                 return (this + "").replace(/^\s+|\s+$/g, "");
             }
         });
+
         var methods = {};
+
         var names = "charAt,charCodeAt,concat,indexOf,lastIndexOf,match,quote,replace,search,slice,split,substr,substring,toLowerCase,toUpperCase".split(",");
+
         for (var i = 0, name, method; name = names[i++]; ) if (method = proto[name]) methods[name] = method;
+
         string.implement(methods);
+
         module.exports = string;
     },
     a: function(require, module, exports, global) {
-        "use strict";
+        /*
+elements insertion
+*/
+                "use strict";
+
         var $ = require("5");
+
+        // base insertion
         $.implement({
             appendChild: function(child) {
                 this[0].appendChild($(child)[0]);
@@ -512,6 +679,8 @@
                 return this;
             }
         });
+
+        // before, after, bottom, top
         $.implement({
             before: function(element) {
                 element = $(element)[0];
@@ -544,6 +713,8 @@
                 return this;
             }
         });
+
+        // insert, replace
         $.implement({
             insert: $.prototype.bottom,
             replace: function(element) {
@@ -552,12 +723,19 @@
                 return this;
             }
         });
+
         module.exports = $;
     },
     b: function(require, module, exports, global) {
-        "use strict";
+        /*
+elements events
+*/
+                "use strict";
+
         var $ = require("2"), prime = require("3"), Emitter = require("c");
+
         var html = document.documentElement;
+
         var addEventListener = html.addEventListener ? function(node, event, handle) {
             node.addEventListener(event, handle, false);
             return handle;
@@ -565,11 +743,13 @@
             node.attachEvent("on" + event, handle);
             return handle;
         };
+
         var removeEventListener = html.removeEventListener ? function(node, event, handle) {
             node.removeEventListener(event, handle, false);
         } : function(node, event, handle) {
             node.detachEvent("on" + event, handle);
         };
+
         var NodesEmitter = prime({
             inherits: Emitter,
             on: function(event, handle) {
@@ -610,11 +790,17 @@
                 return this;
             }
         });
+
         module.exports = $.use(NodesEmitter);
     },
     c: function(require, module, exports, global) {
-        "use strict";
+        /*
+Emitter
+*/
+                "use strict";
+
         var prime = require("3"), array = require("6");
+
         module.exports = prime({
             on: function(event, fn) {
                 var listeners = this._listeners || (this._listeners = {}), events = listeners[event] || (listeners[event] = []);
@@ -642,9 +828,15 @@
         });
     },
     d: function(require, module, exports, global) {
-        "use strict";
+        /*
+Slick Integration
+*/
+                "use strict";
+
         var $ = require("2"), array = require("6"), slick = require("e");
+
         $.use(slick);
+
         var walk = function(combinator, method) {
             return function(expression) {
                 var parts = slick.parse(expression || "*");
@@ -660,6 +852,7 @@
                 }));
             };
         };
+
         $.implement({
             search: function(expression) {
                 if (this.length === 1) return $(expression, this[0]);
@@ -696,28 +889,90 @@
                 }));
             }
         });
+
         module.exports = $;
     },
     e: function(require, module, exports, global) {
-        "use strict";
+        /*
+main
+*/
+                "use strict";
+
         var parse = require("f"), slick = require("g");
+
         slick.parse = parse;
+
         module.exports = slick;
     },
     f: function(require, module, exports, global) {
-        "use strict";
+        /*
+Slick Parser
+ - originally created by the almighty Thomas Aylott <@subtlegradient> (http://subtlegradient.com)
+*/
+                "use strict";
+
+        // Notable changes from Slick.Parser 1.0.x
+        // The parser now uses 2 classes: Expressions and Expression
+        // `new Expressions` produces an array-like object containing a list of Expression objects
+        // - Expressions::toString() produces a cleaned up expressions string
+        // `new Expression` produces an array-like object
+        // - Expression::toString() produces a cleaned up expression string
+        // The only exposed method is parse, which produces a (cached) `new Expressions` instance
+        // parsed.raw is no longer present, use .toString()
+        // parsed.expression is now useless, just use the indexes
+        // parsed.reverse() has been removed for now, due to its apparent uselessness
+        // Other changes in the Expressions object:
+        // - classNames are now unique, and save both escaped and unescaped values
+        // - attributes now save both escaped and unescaped values
+        // - pseudos now save both escaped and unescaped values
         var escapeRe = /([-.*+?^${}()|[\]\/\\])/g, unescapeRe = /\\/g;
+
         var escape = function(string) {
+            // XRegExp v2.0.0-beta-3
+            // « https://github.com/slevithan/XRegExp/blob/master/src/xregexp.js
             return (string + "").replace(escapeRe, "\\$1");
         };
+
         var unescape = function(string) {
             return (string + "").replace(unescapeRe, "");
         };
-        var slickRe = RegExp("^(?:\\s*(,)\\s*|\\s*(<combinator>+)\\s*|(\\s+)|(<unicode>+|\\*)|\\#(<unicode>+)|\\.(<unicode>+)|\\[\\s*(<unicode1>+)(?:\\s*([*^$!~|]?=)(?:\\s*(?:([\"']?)(.*?)\\9)))?\\s*\\](?!\\])|(:+)(<unicode>+)(?:\\((?:(?:([\"'])([^\\13]*)\\13)|((?:\\([^)]+\\)|[^()]*)+))\\))?)".replace(/<combinator>/, "[" + escape(">+~`!@$%^&={}\\;</") + "]").replace(/<unicode>/g, "(?:[\\w\\u00a1-\\uFFFF-]|\\\\[^\\s0-9a-f])").replace(/<unicode1>/g, "(?:[:\\w\\u00a1-\\uFFFF-]|\\\\[^\\s0-9a-f])"));
+
+        var slickRe = RegExp(/*
+#!/usr/bin/env ruby
+puts "\t\t" + DATA.read.gsub(/\(\?x\)|\s+#.*$|\s+|\\$|\\n/,'')
+__END__
+    "(?x)^(?:\
+      \\s* ( , ) \\s*               # Separator          \n\
+    | \\s* ( <combinator>+ ) \\s*   # Combinator         \n\
+    |      ( \\s+ )                 # CombinatorChildren \n\
+    |      ( <unicode>+ | \\* )     # Tag                \n\
+    | \\#  ( <unicode>+       )     # ID                 \n\
+    | \\.  ( <unicode>+       )     # ClassName          \n\
+    |                               # Attribute          \n\
+    \\[  \
+        \\s* (<unicode1>+)  (?:  \
+            \\s* ([*^$!~|]?=)  (?:  \
+                \\s* (?:\
+                    ([\"']?)(.*?)\\9 \
+                )\
+            )  \
+        )?  \\s*  \
+    \\](?!\\]) \n\
+    |   :+ ( <unicode>+ )(?:\
+    \\( (?:\
+        (?:([\"'])([^\\12]*)\\12)|((?:\\([^)]+\\)|[^()]*)+)\
+    ) \\)\
+    )?\
+    )"
+*/
+        "^(?:\\s*(,)\\s*|\\s*(<combinator>+)\\s*|(\\s+)|(<unicode>+|\\*)|\\#(<unicode>+)|\\.(<unicode>+)|\\[\\s*(<unicode1>+)(?:\\s*([*^$!~|]?=)(?:\\s*(?:([\"']?)(.*?)\\9)))?\\s*\\](?!\\])|(:+)(<unicode>+)(?:\\((?:(?:([\"'])([^\\13]*)\\13)|((?:\\([^)]+\\)|[^()]*)+))\\))?)".replace(/<combinator>/, "[" + escape(">+~`!@$%^&={}\\;</") + "]").replace(/<unicode>/g, "(?:[\\w\\u00a1-\\uFFFF-]|\\\\[^\\s0-9a-f])").replace(/<unicode1>/g, "(?:[:\\w\\u00a1-\\uFFFF-]|\\\\[^\\s0-9a-f])"));
+
+        // Part
         var Part = function Part(combinator) {
             this.combinator = combinator || " ";
             this.tag = "*";
         };
+
         Part.prototype.toString = function() {
             if (!this.raw) {
                 var xpr = "", k, part;
@@ -735,9 +990,12 @@
             }
             return this.raw;
         };
+
+        // Expression
         var Expression = function Expression() {
             this.length = 0;
         };
+
         Expression.prototype.toString = function() {
             if (!this.raw) {
                 var xpr = "";
@@ -750,10 +1008,11 @@
             }
             return this.raw;
         };
+
         var replacer = function(rawMatch, separator, combinator, combinatorChildren, tagName, id, className, attributeKey, attributeOperator, attributeQuote, attributeValue, pseudoMarker, pseudoClass, pseudoQuote, pseudoClassQuotedValue, pseudoClassValue) {
             var expression, current;
             if (separator || !this.length) {
-                expression = this[this.length++] = new Expression;
+                expression = this[this.length++] = new Expression();
                 if (separator) return "";
             }
             if (!expression) expression = this[this.length - 1];
@@ -793,6 +1052,8 @@
             }
             return "";
         };
+
+        // Expressions
         var Expressions = function Expressions(expression) {
             this.length = 0;
             var self = this;
@@ -800,6 +1061,7 @@
                 return replacer.apply(self, arguments);
             });
         };
+
         Expressions.prototype.toString = function() {
             if (!this.raw) {
                 var expressions = [];
@@ -808,21 +1070,39 @@
             }
             return this.raw;
         };
+
         var cache = {};
+
         var parse = function(expression) {
             if (expression == null) return null;
             expression = ("" + expression).replace(/^\s+|\s+$/g, "");
             return cache[expression] || (cache[expression] = new Expressions(expression));
         };
+
         module.exports = parse;
     },
     g: function(require, module, exports, global) {
-        "use strict";
+        /*
+Finder Finder
+*/
+                "use strict";
+
+        // Notable changes from Slick.Finder 1.0.x
+        // faster bottom -> up expression matching
+        // prefers mental sanity over *obsessive compulsive* milliseconds savings
+        // uses prototypes instead of objects
+        // tries to use matchesSelector smartly, whenever available
+        // can populate objects as well as arrays
+        // lots of stuff is broken or not implemented
         var parse = require("f");
+
+        // utilities
         var uniqueIndex = 0;
+
         var uniqueID = function(node) {
             return node.uniqueNumber || (node.uniqueNumber = "s:" + uniqueIndex++);
         };
+
         var uniqueIDXML = function(node) {
             var uid = node.getAttribute("uniqueNumber");
             if (!uid) {
@@ -831,29 +1111,53 @@
             }
             return uid;
         };
+
         var isArray = Array.isArray || function(object) {
             return Object.prototype.toString.call(object) === "[object Array]";
         };
+
+        // tests
         var HAS = {
             GET_ELEMENT_BY_ID: function(test, id) {
+                // checks if the document has getElementById, and it works
                 test.innerHTML = '<a id="' + id + '"></a>';
                 return !!this.getElementById(id);
             },
             QUERY_SELECTOR: function(test) {
+                // this supposedly fixes a webkit bug with matchesSelector / querySelector & nth-child
                 test.innerHTML = "_<style>:nth-child(2){}</style>";
+                // checks if the document has querySelectorAll, and it works
                 test.innerHTML = '<a class="MiX"></a>';
                 return test.querySelectorAll(".MiX").length === 1;
             },
             EXPANDOS: function(test, id) {
+                // checks if the document has elements that support expandos
                 test._custom_property_ = id;
                 return test._custom_property_ === id;
             },
+            // TODO: use this ?
+            // CHECKED_QUERY_SELECTOR: function(test){
+            //
+            //     // checks if the document supports the checked query selector
+            //     test.innerHTML = '<select><option selected="selected">a</option></select>'
+            //     return test.querySelectorAll(':checked').length === 1
+            // },
+            // TODO: use this ?
+            // EMPTY_ATTRIBUTE_QUERY_SELECTOR: function(test){
+            //
+            //     // checks if the document supports the empty attribute query selector
+            //     test.innerHTML = '<a class=""></a>'
+            //     return test.querySelectorAll('[class*=""]').length === 1
+            // },
             MATCHES_SELECTOR: function(test) {
                 test.innerHTML = '<a class="MiX"></a>';
+                // checks if the document has matchesSelector, and we can use it.
                 var matches = test.matchesSelector || test.mozMatchesSelector || test.webkitMatchesSelector;
+                // if matchesSelector trows errors on incorrect syntax we can use it
                 if (matches) try {
                     matches.call(test, ":slick");
                 } catch (e) {
+                    // just as a safety precaution, also test if it works on mixedcase (like querySelectorAll)
                     return matches.call(test, ".MiX") ? matches : false;
                 }
                 return false;
@@ -863,33 +1167,68 @@
                 if (test.getElementsByClassName("b").length !== 1) return false;
                 test.firstChild.className = "b";
                 if (test.getElementsByClassName("b").length !== 2) return false;
+                // Opera 9.6 getElementsByClassName doesnt detects the class if its not the first one
                 test.innerHTML = '<a class="a"></a><a class="f b a"></a>';
                 if (test.getElementsByClassName("a").length !== 2) return false;
+                // tests passed
                 return true;
             },
+            // no need to know
+            // GET_ELEMENT_BY_ID_NOT_NAME: function(test, id){
+            //     test.innerHTML = '<a name="'+ id +'"></a><b id="'+ id +'"></b>'
+            //     return this.getElementById(id) !== test.firstChild
+            // },
+            // this is always checked for and fixed
+            // STAR_GET_ELEMENTS_BY_TAG_NAME: function(test){
+            //
+            //     // IE returns comment nodes for getElementsByTagName('*') for some documents
+            //     test.appendChild(this.createComment(''))
+            //     if (test.getElementsByTagName('*').length > 0) return false
+            //
+            //     // IE returns closed nodes (EG:"</foo>") for getElementsByTagName('*') for some documents
+            //     test.innerHTML = 'foo</foo>'
+            //     if (test.getElementsByTagName('*').length) return false
+            //
+            //     // tests passed
+            //     return true
+            // },
+            // this is always checked for and fixed
+            // STAR_QUERY_SELECTOR: function(test){
+            //
+            //     // returns closed nodes (EG:"</foo>") for querySelector('*') for some documents
+            //     test.innerHTML = 'foo</foo>'
+            //     return !!(test.querySelectorAll('*').length)
+            // },
             GET_ATTRIBUTE: function(test) {
+                // tests for working getAttribute implementation
                 var shout = "fus ro dah";
                 test.innerHTML = '<a class="' + shout + '"></a>';
                 return test.firstChild.getAttribute("class") === shout;
             }
         };
+
+        // Finder
         var Finder = function Finder(document) {
             this.document = document;
             var root = this.root = document.documentElement;
             this.tested = {};
+            // uniqueID
             this.uniqueID = this.has("EXPANDOS") ? uniqueID : uniqueIDXML;
+            // getAttribute
             this.getAttribute = this.has("GET_ATTRIBUTE") ? function(node, name) {
                 return node.getAttribute(name);
             } : function(node, name) {
                 var node = node.getAttributeNode(name);
                 return node && node.specified ? node.value : null;
             };
+            // hasAttribute
             this.hasAttribute = root.hasAttribute ? function(node, attribute) {
                 return node.hasAttribute(attribute);
             } : function(node, attribute) {
                 node = node.getAttributeNode(attribute);
                 return !!(node && node.specified);
             };
+            // contains
             this.contains = document.contains && root.contains ? function(context, node) {
                 return context.contains(node);
             } : root.compareDocumentPosition ? function(context, node) {
@@ -900,6 +1239,8 @@
                 } while (node = node.parentNode);
                 return false;
             };
+            // sort
+            // credits to Sizzle (http://sizzlejs.com/)
             this.sorter = root.compareDocumentPosition ? function(a, b) {
                 if (!a.compareDocumentPosition || !b.compareDocumentPosition) return 0;
                 return a.compareDocumentPosition(b) & 4 ? -1 : a === b ? 0 : 1;
@@ -930,6 +1271,8 @@
                 this.querySelectorAll = function(node, expression) {
                     if (this.failed[expression]) return true;
                     var result, _id, _expression, _slick_id, _combinator;
+                    // non-document rooted QSA
+                    // credits to Andrew Dupont
                     if (node !== this.document) {
                         _combinator = expression[0].combinator;
                         _id = node.getAttribute("id");
@@ -940,6 +1283,9 @@
                             node.setAttribute("id", _id);
                         }
                         expression = "#" + _id + " " + _expression;
+                        // these combinators need a parentNode due to how querySelectorAll works, which is:
+                        // finding all the elements that match the given selector
+                        // then filtering by the ones that have the specified element as an ancestor
                         if (_combinator.indexOf("~") > -1 || _combinator.indexOf("+") > -1) {
                             node = node.parentNode;
                             if (!node) result = true;
@@ -956,6 +1302,7 @@
                 };
             }
         };
+
         Finder.prototype.has = function(FEATURE) {
             var tested = this.tested, testedFEATURE = tested[FEATURE];
             if (testedFEATURE != null) return testedFEATURE;
@@ -970,6 +1317,7 @@
             root.removeChild(testNode);
             return tested[FEATURE] = result;
         };
+
         Finder.prototype.search = function(context, expression, found) {
             if (!context) context = this.document; else if (context.document) context = context.document;
             var expressions = parse(expression);
@@ -991,8 +1339,11 @@
                     }
                 };
             }
+            // walker
             var expression, node;
-            main : for (var i = 0; expression = expressions[i++]; ) {
+            main: for (var i = 0; expression = expressions[i++]; ) {
+                // querySelector
+                // TODO: more functional tests
                 if (!slick.noQSA && this.querySelectorAll) {
                     var nodes = this.querySelectorAll(context, expression);
                     if (nodes !== true) {
@@ -1013,12 +1364,15 @@
             if (uniques && found && found.length > 1) this.sort(found);
             return found;
         };
+
         Finder.prototype.sort = function(nodes) {
             return this.sorter ? Array.prototype.sort.call(nodes, this.sorter) : nodes;
         };
+
         Finder.prototype.validate = function(context, node, expressionIndex, expression) {
             var bit = expression[expressionIndex], check, combinator;
             if (!bit) {
+                // last
                 combinator = expression[expressionIndex + 1].combinator;
                 check = function(node) {
                     return node === context;
@@ -1031,33 +1385,44 @@
                 };
             }
             switch (combinator) {
-              case " ":
+              // children of
+                case " ":
                 while (node = node.parentNode) {
                     if (check(node)) return true;
                 }
                 break;
-              case ">":
+
+              // direct children of
+                case ">":
                 {
                     node = node.parentNode;
                     if (check(node)) return true;
                 }
                 break;
-              case "~":
+
+              // next siblings of
+                case "~":
                 while (node = node.previousSibling) {
                     if (node.nodeType === 1 && check(node)) return true;
                 }
                 break;
-              case "+":
+
+              // next sibling of
+                case "+":
                 while (node = node.previousSibling) {
                     if (node.nodeType === 1) return check(node);
                 }
                 break;
-              case "!+":
+
+              // previous sibling of
+                case "!+":
                 while (node = node.nextSibling) {
                     if (node.nodeType === 1) return check(node);
                 }
                 break;
-              case "!~":
+
+              // previous siblings of
+                case "!~":
                 while (node = node.nextSibling) {
                     if (node.nodeType === 1 && check(node)) return true;
                 }
@@ -1065,7 +1430,10 @@
             }
             return false;
         };
+
+        // TODO: most of these pseudo selectors include <html> and qsa doesnt. fixme.
         var pseudos = {
+            // TODO: returns different results than qsa empty.
             empty: function() {
                 var child = this.firstChild;
                 return !(this && this.nodeType === 1) && !(this.innerText || this.textContent || "").length;
@@ -1130,11 +1498,14 @@
                 return this === this.ownerDocument.documentElement;
             }
         };
+
         Finder.prototype.match = function(node, bit, noTag, noId, noClass) {
+            // TODO: more functional tests ?
             if (!slick.noQSA && this.matchesSelector) {
                 var matches = this.matchesSelector(node, bit);
                 if (matches !== true) return matches;
             }
+            // normal matching
             if (!noTag && bit.tag) {
                 var nodeName = node.nodeName.toLowerCase();
                 if (bit.tag === "*") {
@@ -1161,21 +1532,27 @@
                       case "^=":
                         if (!RegExp("^" + escaped).test(actual)) return false;
                         break;
+
                       case "$=":
                         if (!RegExp(escaped + "$").test(actual)) return false;
                         break;
+
                       case "~=":
                         if (!RegExp("(^|\\s)" + escaped + "(\\s|$)").test(actual)) return false;
                         break;
+
                       case "|=":
                         if (!RegExp("^" + escaped + "(-|$)").test(actual)) return false;
                         break;
+
                       case "=":
                         if (actual !== value) return false;
                         break;
+
                       case "*=":
                         if (actual.indexOf(value) === -1) return false;
                         break;
+
                       default:
                         return false;
                     }
@@ -1192,11 +1569,14 @@
             }
             return true;
         };
+
         Finder.prototype.matches = function(node, expression) {
             var expressions = parse(expression);
             if (expressions.length === 1 && expressions[0].length === 1) {
+                // simplest match
                 return this.match(node, expressions[0][0]);
             }
+            // TODO: more functional tests ?
             if (!slick.noQSA && this.matchesSelector) {
                 var matches = this.matchesSelector(node, expressions);
                 if (matches !== true) return matches;
@@ -1207,6 +1587,7 @@
             for (var i = 0, res; res = nodes[i++]; ) if (node === res) return true;
             return false;
         };
+
         Finder.prototype.last = function(node, bit, uniques) {
             var item, items, found = {
                 length: 0
@@ -1214,9 +1595,12 @@
             var noId = !bit.id, noTag = !bit.tag, noClass = !bit.classes;
             if (bit.id && node.getElementById && this.has("GET_ELEMENT_BY_ID")) {
                 item = node.getElementById(bit.id);
+                // return only if id is found, else keep checking
+                // might be a tad slower on non-existing ids, but less insane
                 if (item && item.getAttribute("id") === bit.id) {
                     items = [ item ];
                     noId = true;
+                    // if tag is star, no need to check it in match()
                     if (bit.tag === "*") noTag = true;
                 }
             }
@@ -1225,10 +1609,12 @@
                     items = node.getElementsByClassName(bit.classList);
                     if (!items || !items.length) return found;
                     noClass = true;
+                    // if tag is star, no need to check it in match()
                     if (bit.tag === "*") noTag = true;
                 } else {
                     items = node.getElementsByTagName(bit.tag);
                     if (!items || !items.length) return found;
+                    // if tag is star, need to check it in match because it could select junk, boho
                     if (bit.tag !== "*") noTag = true;
                 }
             }
@@ -1236,7 +1622,9 @@
             for (var i = 0; item = items[i++]; ) if ((!uniques || !uniques[this.uniqueID(item)]) && (noTag && noId && noClass && !bit.attributes && !bit.pseudos || this.match(item, bit, noTag, noId, noClass))) found[found.length++] = item;
             return found;
         };
+
         var finders = {};
+
         var finder = function(context) {
             var doc = context || document;
             if (doc.document) doc = doc.document; else if (doc.ownerDocument) doc = doc.ownerDocument;
@@ -1244,37 +1632,52 @@
             var uid = uniqueID(doc);
             return finders[uid] || (finders[uid] = new Finder(doc));
         };
+
+        // ... API ...
         var slick = function(expression, context) {
             return slick.search(expression, context);
         };
+
         slick.search = function(expression, context, found) {
             return finder(context).search(context, expression, found);
         };
+
         slick.find = function(expression, context) {
             return finder(context).search(context, expression)[0] || null;
         };
+
         slick.getAttribute = function(node, name) {
             return finder(node).getAttribute(node, name);
         };
+
         slick.hasAttribute = function(node, name) {
             return finder(node).hasAttribute(node, name);
         };
+
         slick.contains = function(context, node) {
             return finder(context).contains(context, node);
         };
+
         slick.matches = function(node, expression) {
             return finder(node).matches(node, expression);
         };
+
         slick.sort = function(nodes) {
             if (nodes && nodes.length > 1) finder(nodes[0]).sort(nodes);
             return nodes;
         };
+
+        // slick.debug = true
+        // slick.noQSA  = true
         module.exports = slick;
     },
     h: function(require, module, exports, global) {
-        "use strict";
+                "use strict";
+
         var prime = require("3");
+
         var $ = require("1");
+
         var Event = prime({
             constructor: function(event) {
                 if (!(this instanceof Event)) return new Event(event);
@@ -1298,12 +1701,19 @@
                 return this;
             }
         });
+
         module.exports = Event;
     },
     i: function(require, module, exports, global) {
-        "use strict";
+        /*
+domready
+*/
+                "use strict";
+
         var $ = require("b");
+
         var readystatechange = "onreadystatechange" in document, shouldPoll = false, loaded = false, readys = [], checks = [], ready = null, timer = null, test = document.createElement("div"), doc = $(document), win = $(window);
+
         var domready = function() {
             if (timer) timer = clearTimeout(timer);
             if (!loaded) {
@@ -1315,26 +1725,37 @@
             }
             return loaded;
         };
+
         var check = function() {
             for (var i = checks.length; i--; ) if (checks[i]()) return domready();
             return false;
         };
+
         var poll = function() {
             clearTimeout(timer);
             if (!check()) timer = setTimeout(poll, 1e3 / 60);
         };
+
         if (document.readyState) {
+            // use readyState if available
             var complete = function() {
                 return !!/loaded|complete/.test(document.readyState);
             };
             checks.push(complete);
             if (!complete()) {
+                // unless dom is already loaded
                 if (readystatechange) doc.on("readystatechange", check); else shouldPoll = true;
             } else {
+                // dom is already loaded
                 domready();
             }
         }
+
         if (test.doScroll) {
+            // also use doScroll if available (doscroll comes before readyState "complete")
+            // LEGAL DEPT:
+            // doScroll technique discovered by, owned by, and copyrighted to Diego Perini http://javascript.nwbox.com/IEContentLoaded/
+            // testElement.doScroll() throws when the DOM is not ready, only in the top window
             var scrolls = function() {
                 try {
                     test.doScroll();
@@ -1342,14 +1763,21 @@
                 } catch (e) {}
                 return false;
             };
+            // If doScroll works already, it can't be used to determine domready
+            // e.g. in an iframe
             if (!scrolls()) {
                 checks.push(scrolls);
                 shouldPoll = true;
             }
         }
+
         if (shouldPoll) poll();
+
+        // make sure that domready fires before load, also if not onreadystatechange and doScroll and DOMContentLoaded load will fire
         doc.on("DOMContentLoaded", domready);
+
         win.on("load", domready);
+
         module.exports = function(ready) {
             loaded ? ready() : readys.push(ready);
             return null;

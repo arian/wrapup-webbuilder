@@ -78,27 +78,31 @@ function wrup(req, res, next){
 			var wrup = wrapup();
 			wrup.require(dir + '/main.js');
 
-			var out = wrup.up({
+			wrup.options({
 				compress: compress,
 				output: dir + '/wrupped.js'
 			});
 
-			if (zip){
-				// create zip file from this folder.
-				var proc = exec('zip -r output.zip *', {
-					cwd: dir
-				}, function(err, stdout, stderr){
-					if (err) return callback(err);
-					res.download(path.normalize(dir + '/output.zip'));
+			wrup.up(function(err, out){
+				if (err) return callback(err);
+
+				if (zip){
+					// create zip file from this folder.
+					var proc = exec('zip -r output.zip *', {
+						cwd: dir
+					}, function(err, stdout, stderr){
+						if (err) return callback(err);
+						res.download(path.normalize(dir + '/output.zip'));
+						callback();
+					});
+				} else {
+					// just download the packaged JS file.
+					res.type('js');
+					res.attachment('wrupped.js');
+					res.send(out);
 					callback();
-				});
-			} else {
-				// just download the packaged JS file.
-				res.type('js');
-				res.attachment('wrupped.js');
-				res.send(out);
-				callback();
-			}
+				}
+			});
 
 		},
 		// remove all files and links again.
