@@ -2,11 +2,11 @@
 "use strict";
 
 var $ = require('elements');
-require('elements/lib/traversal');
+require('elements/traversal');
 var e = require('elements-util/lib/event');
 var string = require('prime/es5/string');
 
-require('elements/lib/domready')(function(){
+require('elements/domready')(function(){
 
 	// editor with options
 	var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
@@ -29,7 +29,7 @@ require('elements/lib/domready')(function(){
 	// appending new snippets to the editor
 	$('.snippets a').on('click', function(event){
 		e(event).preventDefault();
-		var name = this.getAttribute('href').slice(1);
+		var name = this[0].getAttribute('href').slice(1);
 		var snippet = snippets[name];
 		if (!snippet) console.warn(name + ' does not exist');
 		else append(snippet);

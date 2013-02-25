@@ -21,20 +21,21 @@
   "license": "MIT",
   "dependencies": {
     "express": "3",
-    "wrapup": "~0.10",
+    "wrapup": "~0.11",
     "jade": "0.27",
     "stylus": "0.29",
     "async": "0.1",
-    "elements": "0.0.7-alpha",
-    "elements-util": "0.0.4",
-    "slick": "1.9.1-alpha",
-    "prime": "0.0.5-alpha",
-    "moofx": "3.0.12"
+    "fs-extra": "0.5",
+    "elements": "0.1",
+    "elements-util": "0.0.5",
+    "slick": "1.10",
+    "prime": "0.1",
+    "moofx": "3.1"
   },
-  "modules": {
-    "prime": ["0.0.4-alpha", "0.0.5-alpha"],
-    "elements": ["0.0.6-alpha", "0.0.7-alpha"],
-    "moofx": ["3.0.10", "3.0.11", "3.0.12"],
-    "slick": ["1.9.0-alpha", "1.9.1-alpha"]
+  "_modules": {
+    "prime": ["0.0.4-alpha", "0.0.5-alpha", "0.0.6", "0.1.0"],
+    "elements": ["0.0.6-alpha", "0.0.7-alpha", "0.0.8", "0.0.9", "0.1.0"],
+    "moofx": ["3.0.10", "3.0.11", "3.0.12", "3.1.0"],
+    "slick": ["1.9.0-alpha", "1.9.1-alpha", "1.10.0"]
   }
 }

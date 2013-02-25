@@ -7,7 +7,7 @@ var async = require('async');
 var snippets;
 
 // a static quick list of the filenames
-var modules = require('../package.json').modules;
+var modules = require('../package.json')._modules;
 var names = Object.keys(modules);
 var files = names.map(function(file){
 	return __dirname + '/../views/snippets/' + file + '.js';

@@ -1,13 +1,13 @@
 "use strict";
 
-var fs     = require('fs');
+var fs     = require('fs-extra');
 var async  = require('async');
 var wrapup = require('wrapup');
 var prime  = require('prime');
 var path   = require('path');
 var exec   = require('child_process').exec;
 
-var modules = require('../package.json').modules;
+var modules = require('../package.json')._modules;
 
 var readme = "The wrupped.js is the file you should use, for example\n" +
 	"include it in your HTML page with:\n\n" +
@@ -31,6 +31,7 @@ function wrup(req, res, next){
 	var zip = !!req.body.zip;
 
 	var uid = (UID++).toString(36);
+	if (UID > 1e6) UID = 0; // time to start over
 	var dir = __dirname + '/../tmp/' + uid;
 
 	var json = {
@@ -41,7 +42,7 @@ function wrup(req, res, next){
 	};
 
 	var versions = json.dependencies;
-	var links = {};
+	var cp = {};
 	var names = [];
 
 	prime.each(modules, function(vers, name){
@@ -49,10 +50,13 @@ function wrup(req, res, next){
 		var version = versions[name] = req.body['version-' + name] || vers[vers.length - 1];
 		var from = __dirname + '/../modules/' + name + '@' + version + '/node_modules/' + name;
 		var to   = dir + '/node_modules/' + name;
-		links[name] = {from: path.normalize(from), to: path.normalize(to)};
+		cp[name] = {from: path.normalize(from), to: path.normalize(to)};
 	});
 
 	json = JSON.stringify(json, null, 2);
+
+	// wrapup output
+	var out;
 
 	async.series([
 		// create all files
@@ -63,16 +67,11 @@ function wrup(req, res, next){
 			async.apply(fs.writeFile, dir + '/package.json', json),
 			async.apply(fs.writeFile, dir + '/README.md', readme)
 		]),
-		// create symlinks to the ../modules packages.
-		// Perhaps instead of linking, it could copy the packages and apply
-		// an dedupe operation: https://npmjs.org/doc/dedupe.html
-		// to remove duplicate packages from the zip download.
-		// Duplicate packages don't affect the wrupped output though, so
-		// it would only be to reduce he zip download.
 		async.apply(async.forEach, names, function(name, callback){
-			var link = links[name];
-			fs.symlink(link.from, link.to, callback);
+			var copy = cp[name];
+			fs.copy(copy.from, copy.to, callback);
 		}),
+		async.apply(exec, "npm dedupe", {cwd: dir}),
 		function(callback){
 
 			var wrup = wrapup();
@@ -80,47 +79,31 @@ function wrup(req, res, next){
 
 			wrup.options({
 				compress: compress,
-				output: dir + '/wrupped.js'
+				output: zip ? (dir + '/wrupped.js') : undefined
 			});
 
-			wrup.up(function(err, out){
-				if (err) return callback(err);
-
-				if (zip){
-					// create zip file from this folder.
-					var proc = exec('zip -r output.zip *', {
-						cwd: dir
-					}, function(err, stdout, stderr){
-						if (err) return callback(err);
-						res.download(path.normalize(dir + '/output.zip'));
-						callback();
-					});
-				} else {
-					// just download the packaged JS file.
-					res.type('js');
-					res.attachment('wrupped.js');
-					res.send(out);
-					callback();
-				}
+			wrup.up(function(err, o){
+				out = o;
+				callback(err);
 			});
-
 		},
-		// remove all files and links again.
-		async.apply(async.forEach, names, function(name, callback){
-			fs.unlink(links[name].to, callback);
-		}),
-		async.apply(async.parallel, (function(){
-			var actions = [
-				async.apply(fs.unlink, dir + '/main.js'),
-				async.apply(fs.unlink, dir + '/wrupped.js'),
-				async.apply(fs.unlink, dir + '/package.json'),
-				async.apply(fs.unlink, dir + '/README.md'),
-				async.apply(fs.rmdir, dir + '/node_modules')
-			];
-			if (zip) actions.push(async.apply(fs.unlink, dir + '/output.zip'));
-			return actions;
-		})()),
-		async.apply(fs.rmdir, dir)
+		zip ? function(callback){
+			// create zip file from this folder.
+			var proc = exec('zip -r output.zip *', {
+				cwd: dir
+			}, function(err, stdout, stderr){
+				if (err) return callback(err);
+				res.download(path.normalize(dir + '/output.zip'));
+				callback();
+			});
+		} : function(callback){
+			// just download the packaged JS file.
+			res.type('js');
+			res.attachment('wrupped.js');
+			res.send(out);
+			callback();
+		},
+		async.apply(fs.remove, dir)
 	], function(err){
 		if (err) next(err);
 	});

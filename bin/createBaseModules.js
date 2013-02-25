@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 "use strict";
 
 var fs    = require('fs');
@@ -7,7 +8,7 @@ var exec  = require('child_process').exec;
 
 var dir = __dirname + '/../modules';
 
-var modules = require('../package.json').modules;
+var modules = require('../package.json')._modules;
 
 function mkdirIfNotExists(path, callback){
 	fs.mkdir(path, function(err){
@@ -32,6 +33,7 @@ prime.each(modules, function(versions, name){
 
 		async.series([
 			async.apply(mkdirIfNotExists, pkgDir),
+			async.apply(fs.writeFile, pkgDir + '/README.md', '# ' + name + '@' + version),
 			async.apply(fs.writeFile, pkgDir + '/package.json', json),
 			async.apply(exec, 'npm install', {
 				cwd: pkgDir
@@ -40,8 +42,8 @@ prime.each(modules, function(versions, name){
 			if (err) throw err;
 			else {
 				console.log("All modules were created with the correct versions");
-				console.log(results[2][0]);
-				console.log(results[2][1]);
+				console.log(results[3][0]);
+				console.log(results[3][1]);
 			}
 		});
 	});
