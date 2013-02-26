@@ -89,9 +89,9 @@ function wrup(req, res, next){
 		},
 		zip ? function(callback){
 			// create zip file from this folder.
-			var proc = exec('zip -r output.zip *', {
+			exec('zip -r output.zip *', {
 				cwd: dir
-			}, function(err, stdout, stderr){
+			}, function(err){
 				if (err) return callback(err);
 				res.download(path.normalize(dir + '/output.zip'));
 				callback();
@@ -110,7 +110,7 @@ function wrup(req, res, next){
 }
 
 // just download the code from the editor
-function editor(req, res, next){
+function editor(req, res){
 	res.type('js');
 	res.attachment('main.js');
 	res.send(req.body.setup);
