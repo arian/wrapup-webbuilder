@@ -14,9 +14,10 @@
         'use strict';
         var $ = require('1');
         require('6');
-        var e = require('9');
-        var string = require('m');
-        require('n')(function () {
+        require('9');
+        var e = require('c');
+        var string = require('b');
+        require('p')(function () {
             var editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
                     lineNumbers: true,
                     matchBrackets: true,
@@ -30,14 +31,22 @@
             function set(text) {
                 editor.setValue(text);
             }
-            $('.snippets a').on('click', function (event) {
-                e(event).preventDefault();
-                var name = this[0].getAttribute('href').slice(1);
-                var snippet = snippets[name];
-                if (!snippet)
-                    console.warn(name + ' does not exist');
-                else
-                    append(snippet);
+            var versions = $('.snippets select');
+            var injectSnippets = $('.snippets a');
+            injectSnippets.forEach(function (inject, index) {
+                $(inject).on('click', function (event) {
+                    e(event).preventDefault();
+                    var name = this[0].getAttribute('href').slice(1);
+                    var version = $(versions[index]).value();
+                    var snippet = snippets[name][version];
+                    if (typeof snippet == 'object') {
+                        snippet = snippets[name][snippet.use];
+                    }
+                    if (!snippet)
+                        console.warn(name + ' does not exist');
+                    else
+                        append(snippet);
+                });
             });
             (function (file) {
                 if (!file || !file[0])
@@ -1104,8 +1113,225 @@
     },
     '9': function (require, module, exports, global) {
         'use strict';
+        var $ = require('1'), string = require('a'), array = require('3');
+        $.implement({
+            setAttribute: function (name, value) {
+                this.forEach(function (node) {
+                    node.setAttribute(name, value);
+                });
+                return this;
+            },
+            getAttribute: function (name) {
+                var attr = this[0].getAttributeNode(name);
+                return attr && attr.specified ? attr.value : null;
+            },
+            hasAttribute: function (name) {
+                var node = this[0];
+                if (node.hasAttribute)
+                    return node.hasAttribute(name);
+                var attr = node.getAttributeNode(name);
+                return !!(attr && attr.specified);
+            },
+            removeAttribute: function (name) {
+                this.forEach(function (node) {
+                    var attr = node.getAttributeNode(name);
+                    if (attr)
+                        node.removeAttributeNode(attr);
+                });
+                return this;
+            }
+        });
+        var accessors = {};
+        array.forEach('type,value,name,href,title,id'.split(','), function (name) {
+            accessors[name] = function (value) {
+                if (value !== undefined) {
+                    this.forEach(function (node) {
+                        node[name] = value;
+                    });
+                    return this;
+                }
+                return this[0][name];
+            };
+        });
+        array.forEach('checked,disabled,selected'.split(','), function (name) {
+            accessors[name] = function (value) {
+                if (value !== undefined) {
+                    this.forEach(function (node) {
+                        node[name] = !!value;
+                    });
+                    return this;
+                }
+                return !!this[0][name];
+            };
+        });
+        var classes = function (className) {
+            var classNames = string.clean(className).split(' '), uniques = {};
+            return array.filter(classNames, function (className) {
+                if (className !== '' && !uniques[className])
+                    return uniques[className] = className;
+            }).sort();
+        };
+        accessors.className = function (className) {
+            if (className !== undefined) {
+                this.forEach(function (node) {
+                    node.className = classes(className).join(' ');
+                });
+                return this;
+            }
+            return classes(this[0].className).join(' ');
+        };
+        $.implement({
+            attribute: function (name, value) {
+                var accessor = accessors[name];
+                if (accessor)
+                    return accessor.call(this, value);
+                if (value != null)
+                    return this.setAttribute(name, value);
+                if (value === null)
+                    return this.removeAttribute(name);
+                if (value === undefined)
+                    return this.getAttribute(name);
+            }
+        });
+        $.implement(accessors);
+        $.implement({
+            check: function () {
+                return this.checked(true);
+            },
+            uncheck: function () {
+                return this.checked(false);
+            },
+            disable: function () {
+                return this.disabled(true);
+            },
+            enable: function () {
+                return this.disabled(false);
+            },
+            select: function () {
+                return this.selected(true);
+            },
+            deselect: function () {
+                return this.selected(false);
+            }
+        });
+        $.implement({
+            classNames: function () {
+                return classes(this[0].className);
+            },
+            hasClass: function (className) {
+                return array.indexOf(this.classNames(), className) > -1;
+            },
+            addClass: function (className) {
+                this.forEach(function (node) {
+                    var nodeClassName = node.className;
+                    var classNames = classes(nodeClassName + ' ' + className).join(' ');
+                    if (nodeClassName != classNames)
+                        node.className = classNames;
+                });
+                return this;
+            },
+            removeClass: function (className) {
+                this.forEach(function (node) {
+                    var classNames = classes(node.className);
+                    array.forEach(classes(className), function (className) {
+                        var index = array.indexOf(classNames, className);
+                        if (index > -1)
+                            classNames.splice(index, 1);
+                    });
+                    node.className = classNames.join(' ');
+                });
+                return this;
+            }
+        });
+        $.prototype.toString = function () {
+            var tag = this.tag(), id = this.id(), classes = this.classNames();
+            var str = tag;
+            if (id)
+                str += '#' + id;
+            if (classes.length)
+                str += '.' + classes.join('.');
+            return str;
+        };
+        var textProperty = document.createElement('div').textContent == null ? 'innerText' : 'textContent';
+        $.implement({
+            tag: function () {
+                return this[0].tagName.toLowerCase();
+            },
+            html: function (html) {
+                if (html != null) {
+                    this.forEach(function (node) {
+                        node.innerHTML = html;
+                    });
+                    return this;
+                }
+                return this[0].innerHTML;
+            },
+            text: function (text) {
+                if (text != undefined) {
+                    this.forEach(function (node) {
+                        node[textProperty] = text;
+                    });
+                    return this;
+                }
+                return this[0][textProperty];
+            }
+        });
+        module.exports = $;
+    },
+    'a': function (require, module, exports, global) {
+        'use strict';
+        var string = require('b');
+        string.implement({
+            clean: function () {
+                return string.trim((this + '').replace(/\s+/g, ' '));
+            },
+            camelize: function () {
+                return (this + '').replace(/-\D/g, function (match) {
+                    return match.charAt(1).toUpperCase();
+                });
+            },
+            hyphenate: function () {
+                return (this + '').replace(/[A-Z]/g, function (match) {
+                    return '-' + match.toLowerCase();
+                });
+            },
+            capitalize: function () {
+                return (this + '').replace(/\b[a-z]/g, function (match) {
+                    return match.toUpperCase();
+                });
+            },
+            escape: function () {
+                return (this + '').replace(/([-.*+?^${}()|[\]\/\\])/g, '\\$1');
+            },
+            number: function () {
+                return parseFloat(this);
+            }
+        });
+        if (typeof JSON !== 'undefined')
+            string.implement({
+                decode: function () {
+                    return JSON.parse(this);
+                }
+            });
+        module.exports = string;
+    },
+    'b': function (require, module, exports, global) {
+        'use strict';
+        var string = require('4')['string'];
+        var names = ('charAt,charCodeAt,concat,contains,endsWith,indexOf,lastIndexOf,localeCompare,match,replace,search,slice,split' + ',startsWith,substr,substring,toLocaleLowerCase,toLocaleUpperCase,toLowerCase,toString,toUpperCase,trim,valueOf').split(',');
+        for (var methods = {}, i = 0, name, method; name = names[i++];)
+            if (method = String.prototype[name])
+                methods[name] = method;
+        if (!methods.trim)
+            methods.trim = function () {
+                return (this + '').replace(/^\s+|\s+$/g, '');
+            };
+        module.exports = string.implement(methods);
+    },
+    'c': function (require, module, exports, global) {
+        'use strict';
         var prime = require('2');
-        var $ = require('a');
+        var $ = require('d');
         var Event = prime({
                 constructor: function (event) {
                     if (!(this instanceof Event))
@@ -1139,18 +1365,18 @@
             });
         module.exports = Event;
     },
-    'a': function (require, module, exports, global) {
+    'd': function (require, module, exports, global) {
         'use strict';
-        var $ = require('b');
-        require('d');
-        require('j');
-        require('k');
-        require('e');
+        var $ = require('e');
+        require('g');
+        require('m');
+        require('n');
+        require('h');
         module.exports = $;
     },
-    'b': function (require, module, exports, global) {
+    'e': function (require, module, exports, global) {
         'use strict';
-        var prime = require('c');
+        var prime = require('f');
         var uniqueIndex = 0;
         var uniqueID = function (n) {
             return n === global ? 'global' : n.uniqueNumber || (n.uniqueNumber = 'n:' + (uniqueIndex++).toString(36));
@@ -1240,7 +1466,7 @@
         };
         module.exports = $;
     },
-    'c': function (require, module, exports, global) {
+    'f': function (require, module, exports, global) {
         'use strict';
         var has = function (self, key) {
             return Object.hasOwnProperty.call(self, key);
@@ -1305,9 +1531,9 @@
         prime.create = create;
         module.exports = prime;
     },
-    'd': function (require, module, exports, global) {
+    'g': function (require, module, exports, global) {
         'use strict';
-        var $ = require('e'), string = require('h'), array = require('f');
+        var $ = require('h'), string = require('k'), array = require('i');
         $.implement({
             setAttribute: function (name, value) {
                 this.forEach(function (node) {
@@ -1472,9 +1698,9 @@
         });
         module.exports = $;
     },
-    'e': function (require, module, exports, global) {
+    'h': function (require, module, exports, global) {
         'use strict';
-        var $ = require('b'), array = require('f').prototype;
+        var $ = require('e'), array = require('i').prototype;
         module.exports = $.implement({
             forEach: array.forEach,
             map: array.map,
@@ -1483,9 +1709,9 @@
             some: array.some
         });
     },
-    'f': function (require, module, exports, global) {
+    'i': function (require, module, exports, global) {
         'use strict';
-        var shell = require('g');
+        var shell = require('j');
         var proto = Array.prototype;
         var array = shell({
                 filter: proto.filter || function (fn, context) {
@@ -1545,9 +1771,9 @@
         array.implement(methods);
         module.exports = array;
     },
-    'g': function (require, module, exports, global) {
+    'j': function (require, module, exports, global) {
         'use strict';
-        var prime = require('c'), slice = Array.prototype.slice;
+        var prime = require('f'), slice = Array.prototype.slice;
         var shell = prime({
                 mutator: function (key, method) {
                     this[key] = function (self) {
@@ -1564,11 +1790,11 @@
             return prime(proto);
         };
     },
-    'h': function (require, module, exports, global) {
+    'k': function (require, module, exports, global) {
         'use strict';
-        var shell = require('g');
+        var shell = require('j');
         var string = shell({
-                inherits: require('i'),
+                inherits: require('l'),
                 contains: function (string, separator) {
                     return (separator ? (separator + this + separator).indexOf(separator + string + separator) : (this + '').indexOf(string)) > -1;
                 },
@@ -1605,9 +1831,9 @@
             });
         module.exports = string;
     },
-    'i': function (require, module, exports, global) {
+    'l': function (require, module, exports, global) {
         'use strict';
-        var shell = require('g');
+        var shell = require('j');
         var proto = String.prototype;
         var string = shell({
                 trim: proto.trim || function () {
@@ -1622,9 +1848,9 @@
         string.implement(methods);
         module.exports = string;
     },
-    'j': function (require, module, exports, global) {
+    'm': function (require, module, exports, global) {
         'use strict';
-        var $ = require('e');
+        var $ = require('h');
         $.implement({
             appendChild: function (child) {
                 this[0].appendChild($(child)[0]);
@@ -1687,9 +1913,9 @@
         });
         module.exports = $;
     },
-    'k': function (require, module, exports, global) {
+    'n': function (require, module, exports, global) {
         'use strict';
-        var $ = require('b'), prime = require('c'), Emitter = require('l');
+        var $ = require('e'), prime = require('f'), Emitter = require('o');
         var html = document.documentElement;
         var addEventListener = html.addEventListener ? function (node, event, handle) {
                 node.addEventListener(event, handle, false);
@@ -1748,9 +1974,9 @@
             });
         module.exports = $.use(NodesEmitter);
     },
-    'l': function (require, module, exports, global) {
+    'o': function (require, module, exports, global) {
         'use strict';
-        var prime = require('c'), array = require('f');
+        var prime = require('f'), array = require('i');
         module.exports = prime({
             on: function (event, fn) {
                 var listeners = this._listeners || (this._listeners = {}), events = listeners[event] || (listeners[event] = []);
@@ -1779,22 +2005,9 @@
             }
         });
     },
-    'm': function (require, module, exports, global) {
+    'p': function (require, module, exports, global) {
         'use strict';
-        var string = require('4')['string'];
-        var names = ('charAt,charCodeAt,concat,contains,endsWith,indexOf,lastIndexOf,localeCompare,match,replace,search,slice,split' + ',startsWith,substr,substring,toLocaleLowerCase,toLocaleUpperCase,toLowerCase,toString,toUpperCase,trim,valueOf').split(',');
-        for (var methods = {}, i = 0, name, method; name = names[i++];)
-            if (method = String.prototype[name])
-                methods[name] = method;
-        if (!methods.trim)
-            methods.trim = function () {
-                return (this + '').replace(/^\s+|\s+$/g, '');
-            };
-        module.exports = string.implement(methods);
-    },
-    'n': function (require, module, exports, global) {
-        'use strict';
-        var $ = require('o');
+        var $ = require('q');
         var readystatechange = 'onreadystatechange' in document, shouldPoll = false, loaded = false, readys = [], checks = [], ready = null, timer = null, test = document.createElement('div'), doc = $(document), win = $(window);
         var domready = function () {
             if (timer)
@@ -1858,9 +2071,9 @@
             return null;
         };
     },
-    'o': function (require, module, exports, global) {
+    'q': function (require, module, exports, global) {
         'use strict';
-        var $ = require('1'), prime = require('2'), Emitter = require('p');
+        var $ = require('1'), prime = require('2'), Emitter = require('r');
         var html = document.documentElement;
         var addEventListener = html.addEventListener ? function (node, event, handle) {
                 node.addEventListener(event, handle, false);
@@ -1920,7 +2133,7 @@
         });
         module.exports = $;
     },
-    'p': function (require, module, exports, global) {
+    'r': function (require, module, exports, global) {
         'use strict';
         var prime = require('2'), slice = Array.prototype.slice;
         var EID = 0;

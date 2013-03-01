@@ -3,6 +3,7 @@
 
 var $ = require('elements');
 require('elements/traversal');
+require('elements/attributes');
 var e = require('elements-util/lib/event');
 var string = require('prime/es5/string');
 
@@ -26,13 +27,22 @@ require('elements/domready')(function(){
 		editor.setValue(text);
 	}
 
-	// appending new snippets to the editor
-	$('.snippets a').on('click', function(event){
-		e(event).preventDefault();
-		var name = this[0].getAttribute('href').slice(1);
-		var snippet = snippets[name];
-		if (!snippet) console.warn(name + ' does not exist');
-		else append(snippet);
+	var versions = $('.snippets select');
+	var injectSnippets = $('.snippets a');
+
+	injectSnippets.forEach(function(inject, index){
+		// appending new snippets to the editor
+		$(inject).on('click', function(event){
+			e(event).preventDefault();
+			var name = this[0].getAttribute('href').slice(1);
+			var version = $(versions[index]).value();
+			var snippet = snippets[name][version];
+			if (typeof snippet == 'object'){
+				snippet = snippets[name][snippet.use];
+			}
+			if (!snippet) console.warn(name + ' does not exist');
+			else append(snippet);
+		});
 	});
 
 	// load from the file input

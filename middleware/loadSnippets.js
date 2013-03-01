@@ -9,19 +9,37 @@ var snippets;
 // a static quick list of the filenames
 var modules = require('../package.json')._modules;
 var names = Object.keys(modules);
-var files = names.map(function(file){
-	return __dirname + '/../views/snippets/' + file + '.js';
-});
 
 function loadSnippets(callback){
-	async.map(files, fs.readFile, function(err, results){
-		if (err) return callback(err);
-		var result = {};
-		results.forEach(function(buffer, i){
-			result[names[i]] = buffer.toString();
+
+	async.map(names, function(name, callback){
+
+		async.map(modules[name], function(version, callback){
+			var file = __dirname + '/../views/snippets/' + name + '-' + version + '.js';
+			fs.readFile(file, 'utf-8', function(err, data){
+				callback(null, err ? null : data);
+			});
+		}, function(err, res){
+			var versions = {}, last;
+			modules[name].forEach(function(version, i){
+				if (res[i]){
+					versions[version] = res[i];
+					last = version;
+				} else {
+					versions[version] = {use: last};
+				}
+			});
+			callback(null, versions);
 		});
-		callback(null, result);
+
+	}, function(err, results){
+		var result = {};
+		names.forEach(function(name, i){
+			result[name] = results[i];
+		});
+		callback(err, result);
 	});
+
 }
 
 module.exports = function(req, res, next){
