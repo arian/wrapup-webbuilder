@@ -3,21 +3,21 @@ html
 	head
 		title="Wrapup Web Builder"
 
-		script(src="/js/codemirror/lib/codemirror.js")
-		script(src="/js/codemirror/mode/javascript/javascript.js")
-		link(href="/js/codemirror/lib/codemirror.css", rel="stylesheet")
-		link(href="/js/codemirror/theme/monokai.css", rel="stylesheet")
+		script(src="#{path}/js/codemirror/lib/codemirror.js")
+		script(src="#{path}/js/codemirror/mode/javascript/javascript.js")
+		link(href="#{path}/js/codemirror/lib/codemirror.css", rel="stylesheet")
+		link(href="#{path}/js/codemirror/theme/monokai.css", rel="stylesheet")
 
 		script var snippets = !{JSON.stringify(snippets)};
 
-		script(src="/main.js")
-		link(href="/layout.css", rel="stylesheet")
+		script(src="#{path}/main.js")
+		link(href="#{path}/layout.css", rel="stylesheet")
 
 	body
 
 		h1= "Download WrapUp'd NPM packages"
 
-		form(method="post", action="/")
+		form(method="post", action="#{path}/")
 
 			.aside
 				.load

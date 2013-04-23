@@ -8,6 +8,12 @@ var app = express();
 app.use(express.bodyParser());
 
 app.set('view engine', 'jade');
+app.set('views', __dirname + '/views');
+
+app.use(function(req, res, next){
+	app.locals.path = app.path();
+	next();
+});
 
 app.configure('development', function(){
 
@@ -38,5 +44,10 @@ app.post('/', buildJSResult);
 
 app.use(express['static'](__dirname + '/public'));
 
-app.listen(3000);
-console.log('app on http://localhost:3000');
+if (process.mainModule == module){
+	app.listen(3000);
+	console.log('app on http://localhost:3000');
+} else {
+	module.exports = app;
+}
+
