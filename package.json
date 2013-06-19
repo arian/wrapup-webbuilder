@@ -6,6 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "wrapup-webbuilder-init": "./bin/createBaseModules.js"
+  },
   "repository": {
     "type": "git",
     "url": "git://github.com/arian/wrapup-webbuilder.git"
@@ -32,30 +35,33 @@
     "prime": "0.1",
     "moofx": "3.1"
   },
-  "_modules": {
-    "prime": [
-      "0.0.4-alpha",
-      "0.0.5-alpha",
-      "0.0.6",
-      "0.1.0"
-    ],
-    "elements": [
-      "0.0.6-alpha",
-      "0.0.7-alpha",
-      "0.0.8",
-      "0.0.9",
-      "0.1.0"
-    ],
-    "moofx": [
-      "3.0.10",
-      "3.0.11",
-      "3.0.12",
-      "3.1.0"
-    ],
-    "slick": [
-      "1.9.0-alpha",
-      "1.9.1-alpha",
-      "1.10.0"
-    ]
+  "_wrapupWebbuilderConfig": {
+    "modules": {
+      "prime": [
+        "0.0.4-alpha",
+        "0.0.5-alpha",
+        "0.0.6",
+        "0.1.0"
+      ],
+      "elements": [
+        "0.0.6-alpha",
+        "0.0.7-alpha",
+        "0.0.8",
+        "0.0.9",
+        "0.1.0"
+      ],
+      "moofx": [
+        "3.0.10",
+        "3.0.11",
+        "3.0.12",
+        "3.1.0"
+      ],
+      "slick": [
+        "1.9.0-alpha",
+        "1.9.1-alpha",
+        "1.10.0"
+      ]
+    },
+    "dir": "./modules"
   }
 }

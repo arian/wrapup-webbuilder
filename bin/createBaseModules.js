@@ -2,13 +2,21 @@
 "use strict";
 
 var fs    = require('fs');
+var path  = require('path');
 var async = require('async');
 var prime = require('prime');
 var exec  = require('child_process').exec;
 
-var dir = __dirname + '/../modules';
-
-var modules = require('../package.json')._modules;
+var modules, config, dir;
+try {
+	config = require(process.cwd() + '/package.json')._wrapupWebbuilderConfig;
+	modules = config.modules;
+	dir = path.join(process.cwd(), config.dir);
+} catch (e){
+	console.error('Could not read package.json with correct' +
+		'"_wrapupWebbuilderConfig" configuration');
+	process.exit(1);
+}
 
 function mkdirIfNotExists(path, callback){
 	fs.mkdir(path, function(err){
@@ -26,7 +34,8 @@ prime.each(modules, function(versions, name){
 			name: name,
 			version: version,
 			description: pkg,
-			dependencies: {}
+			dependencies: {},
+			repository: {}
 		};
 		json.dependencies[name] = version;
 		json = JSON.stringify(json, null, 2);
@@ -42,8 +51,10 @@ prime.each(modules, function(versions, name){
 			if (err) throw err;
 			else {
 				console.log("All modules were created with the correct versions");
-				console.log(results[3][0]);
-				console.log(results[3][1]);
+				var stdout = results[3][0];
+				var stderr = results[3][1];
+				if (stdout) console.log(stdout);
+				if (stderr) console.error(stderr);
 			}
 		});
 	});
