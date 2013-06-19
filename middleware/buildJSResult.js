@@ -7,8 +7,6 @@ var prime  = require('prime');
 var path   = require('path');
 var exec   = require('child_process').exec;
 
-var modules = require('../package.json')._modules;
-
 var readme = "The wrupped.js is the file you should use, for example\n" +
 	"include it in your HTML page with:\n\n" +
 	'    <script src="wrupped.js"></script>\n\n' +
@@ -24,7 +22,9 @@ var readme = "The wrupped.js is the file you should use, for example\n" +
 var UID = new Date();
 
 // function which uses wrapup to download a wrup'd file
-function wrup(req, res, next){
+function wrup(config, req, res, next){
+
+	var modules = config.modules;
 
 	var js = req.body.setup;
 	var compress = !!req.body.compress;
@@ -32,7 +32,7 @@ function wrup(req, res, next){
 
 	var uid = (UID++).toString(36);
 	if (UID > 1e6) UID = 0; // time to start over
-	var dir = __dirname + '/../tmp/' + uid;
+	var dir = config.tmpdir + '/' + uid;
 
 	var json = {
 		name: "my-package",
@@ -48,7 +48,7 @@ function wrup(req, res, next){
 	prime.each(modules, function(vers, name){
 		names.push(name);
 		var version = versions[name] = req.body['version-' + name] || vers[vers.length - 1];
-		var from = __dirname + '/../modules/' + name + '@' + version + '/node_modules/' + name;
+		var from = config.dir + '/' + name + '@' + version + '/node_modules/' + name;
 		var to   = dir + '/node_modules/' + name;
 		cp[name] = {from: path.normalize(from), to: path.normalize(to)};
 	});
@@ -60,7 +60,7 @@ function wrup(req, res, next){
 
 	async.series([
 		// create all files
-		async.apply(fs.mkdir, dir),
+		async.apply(fs.mkdirs, dir),
 		async.apply(async.parallel, [
 			async.apply(fs.mkdir, dir + '/node_modules'),
 			async.apply(fs.writeFile, dir + '/main.js', js),
@@ -110,15 +110,19 @@ function wrup(req, res, next){
 }
 
 // just download the code from the editor
-function editor(req, res){
+function editor(config, req, res){
 	res.type('js');
 	res.attachment('main.js');
 	res.send(req.body.setup);
 }
 
-module.exports = function buildJSResult(req, res, next){
-	if (req.body.setup == null) throw new Error("Editor field is not set");
-	if (req.body.wrup) wrup(req, res, next);
-	else if (req.body.editor) editor(req, res, next);
-	else throw new Error("Either the wrup or editor fields must be non-empty");
+module.exports = function(config){
+
+	return function buildJSResult(req, res, next){
+		if (req.body.setup == null) throw new Error("Editor field is not set");
+		if (req.body.wrup) wrup(config, req, res, next);
+		else if (req.body.editor) editor(config, req, res, next);
+		else throw new Error("Either the wrup or editor fields must be non-empty");
+	};
+
 };

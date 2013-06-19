@@ -30,7 +30,7 @@
     "async": "0.1",
     "fs-extra": "0.5",
     "elements": "0.1",
-    "elements-util": "0.0.5",
+    "elements-util": "0.1",
     "slick": "1.10",
     "prime": "0.1",
     "moofx": "3.1"
@@ -62,6 +62,7 @@
         "1.10.0"
       ]
     },
-    "dir": "./modules"
+    "dir": "./modules",
+    "snippetsdir": "./views/snippets"
   }
 }
