@@ -74,17 +74,26 @@ function wrup(config, req, res, next){
 		async.apply(exec, "npm dedupe", {cwd: dir}),
 		function(callback){
 
-			var wrup = wrapup();
+			var wrup = wrapup(), error;
 			wrup.require(dir + '/main.js');
 
 			wrup.options({
 				compress: compress,
-				output: zip ? (dir + '/wrupped.js') : undefined
+				output: zip ? (dir + '/wrupped.js') : undefined,
+				inPath: dir
+			});
+
+			wrup.on('error', function(err){
+				callback(error = err);
+			});
+
+			wrup.on('warn', function(err){
+				console.warn(err);
 			});
 
 			wrup.up(function(err, o){
 				out = o;
-				callback(err);
+				if (!error) callback(err);
 			});
 		},
 		zip ? function(callback){
