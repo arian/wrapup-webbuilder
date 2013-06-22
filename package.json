@@ -1,6 +1,6 @@
 {
   "name": "wrapup-webbuilder",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A web builder for downloading browser wrapup'd JavaScript",
   "main": "index.js",
   "scripts": {
