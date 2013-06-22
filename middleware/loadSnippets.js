@@ -16,7 +16,7 @@ module.exports = function(config){
 		async.map(names, function(name, callback){
 
 			async.map(modules[name], function(version, callback){
-				var file = __dirname + '/../views/snippets/' + name + '-' + version + '.js';
+				var file = config.snippetsdir + '/' + name + '-' + version + '.js';
 				fs.readFile(file, 'utf-8', function(err, data){
 					callback(null, err ? null : data);
 				});
