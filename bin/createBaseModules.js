@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-var fs    = require('fs');
+var fs    = require('fs-extra');
 var path  = require('path');
 var async = require('async');
 var prime = require('prime');
@@ -16,13 +16,6 @@ try {
 	console.error('Could not read package.json with correct' +
 		'"_wrapupWebbuilderConfig" configuration');
 	process.exit(1);
-}
-
-function mkdirIfNotExists(path, callback){
-	fs.mkdir(path, function(err){
-		if (err && err.code != 'EEXIST') callback(err);
-		else callback();
-	});
 }
 
 prime.each(modules, function(versions, name){
@@ -41,7 +34,7 @@ prime.each(modules, function(versions, name){
 		json = JSON.stringify(json, null, 2);
 
 		async.series([
-			async.apply(mkdirIfNotExists, pkgDir),
+			async.apply(fs.mkdirs, pkgDir),
 			async.apply(fs.writeFile, pkgDir + '/README.md', '# ' + name + '@' + version),
 			async.apply(fs.writeFile, pkgDir + '/package.json', json),
 			async.apply(exec, 'npm install', {
